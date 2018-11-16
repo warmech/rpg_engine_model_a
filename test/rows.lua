@@ -1,3 +1,18 @@
+function loadTilemap(fileName)
+	
+	
+
+	--open tilemap
+	local tilemapFile = io.open(fileName, "r")
+	io.input(tilemapFile)
+
+	local column_count = countColumns()
+	local row_count = countRows(fileName)
+
+	print(row_count)
+	print(column_count)
+end
+
 function fromCSV (s)
 	local t = {}        -- table to collect fields
 	local fieldstart = 1
@@ -25,3 +40,6 @@ function countColumns()
 	end
 	return column_count
 end
+
+
+loadTilemap("01_first_world.tmx")
