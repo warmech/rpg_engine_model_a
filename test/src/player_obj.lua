@@ -8,7 +8,7 @@ function initPlayerObject(playerName, playerType)
 	-- Populate sprite and movement array
 	local movementCounter = 1
 	local movementState = 1
-	local spriteSheet = "../gfx/char/"..playerType..".png"
+	local spriteSheet = "/gfx/char/"..playerType..".png"
 	local xTilePosition = 0
 	local yTilePosition = 0
 	local xPixelPosition = 0
