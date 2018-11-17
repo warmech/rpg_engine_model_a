@@ -17,11 +17,7 @@ function countRows(fileName)
 	return row_count
 end
 
-function countColumns()
-	local column_count = 0
-	local firstLine = fromCSV(io.read())
-	for key, value in ipairs(firstLine) do
-		column_count = column_count + 1
-	end
+function countColumns(rowData)
+	local column_count = (#rowData)
 	return column_count
 end
