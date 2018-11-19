@@ -7,13 +7,13 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
 	local rowCount = countRows(tilemapFileName)
 
 	--Count number of columns in tilemap
-	local columnCount = countColumns(fromCSV(io.read()))
+	local columnCount = countColumns(readNumericalCSV(io.read()))
 	tilemapFile:seek("set", 0)
 
 	--Read a row and parse it to map table
 	local mapTable = {}
 	for row = 1, rowCount do
-			local line = fromCSV(io.read())
+			local line = readNumericalCSV(io.read())
 			mapTable[row] = {}
 			for column = 1, columnCount do
 				mapTable[row][column] = line[column]
@@ -26,7 +26,7 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
 	--Open metadata file and parse it to the metadata table
 	local metadataFile = io.open(metadataFileName, "r")
 	io.input(metadataFile)
-	local metadataTable = fromCSV(io.read())
+	local metadataTable = readNumericalCSV(io.read())
 
     local mapMetadata = 
     {
@@ -78,7 +78,8 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
 		--Iterate across the columns of the map tiles displayed on screen
 		for x = 0, (mapMetadata.tilesDisplayWidth - 1) do
 			--Write the appropriate tile to the current cell in the sprite batch
-			newTilesetSpriteBatch:add(tilesetQuads[tonumber(mapTable[y + math.floor(mapMetadata.mapY)][x + math.floor(mapMetadata.mapX)])], x * tileSize, y * tileSize)
+            --newTilesetSpriteBatch:add(tilesetQuads[tonumber(mapTable[y + math.floor(mapMetadata.mapY)][x + math.floor(mapMetadata.mapX)])], x * tileSize, y * tileSize)
+			newTilesetSpriteBatch:add(tilesetQuads[mapTable[y + math.floor(mapMetadata.mapY)][x + math.floor(mapMetadata.mapX)]], x * tileSize, y * tileSize)
 		end
 	end
 
@@ -99,7 +100,7 @@ function updateTilesetSpriteBatch()
         --Iterate across the columns of the map tiles displayed on screen
         for x = 0, (currentMap.metadata.tilesDisplayWidth - 1) do
             --Write the appropriate tile to the current cell in the sprite batch
-            currentMap.tilesetSpriteBatch:add(currentMap.tileset[tonumber(currentMap.tilemap[y + math.floor(currentMap.metadata.mapY)][x + math.floor(currentMap.metadata.mapX)])], x * 16, y * 16)
+            currentMap.tilesetSpriteBatch:add(currentMap.tileset[currentMap.tilemap[y + math.floor(currentMap.metadata.mapY)][x + math.floor(currentMap.metadata.mapX)]], x * 16, y * 16)
         end
     end
 
@@ -108,6 +109,7 @@ function updateTilesetSpriteBatch()
 
 end
 
+--[[
 function moveMap(dx, dy)
     local oldMapX = currentMap.metadata.mapX
     local oldMapY = currentMap.metadata.mapY
@@ -119,17 +121,70 @@ function moveMap(dx, dy)
         updateTilesetSpriteBatch()
     end
 end
+]]
 
-function moveTileMap()
+function moveMap()
     local oldMapX = currentMap.metadata.mapX
     local oldMapY = currentMap.metadata.mapY
     currentMap.metadata.mapX = math.max(math.min(currentMap.metadata.mapX + playerCharacter.gfx.xDelta, currentMap.metadata.mapWidth - currentMap.metadata.tilesDisplayWidth + currentMap.metadata.mapBoundaryOffset), 1)
     currentMap.metadata.mapY = math.max(math.min(currentMap.metadata.mapY + playerCharacter.gfx.yDelta, currentMap.metadata.mapHeight - currentMap.metadata.tilesDisplayHeight + currentMap.metadata.mapBoundaryOffset), 1)
-    print("mapX + xDelta: "..currentMap.metadata.mapX + playerCharacter.gfx.xDelta)
-    print("mapWidth + tilesDisplayWidth + offset: "..currentMap.metadata.mapWidth - currentMap.metadata.tilesDisplayWidth + currentMap.metadata.mapBoundaryOffset)
+    --print("mapX + xDelta: "..currentMap.metadata.mapX + playerCharacter.gfx.xDelta)
+    --print("mapWidth + tilesDisplayWidth + offset: "..currentMap.metadata.mapWidth - currentMap.metadata.tilesDisplayWidth + currentMap.metadata.mapBoundaryOffset)
 
     -- only update if we actually moved
     if math.floor(currentMap.metadata.mapX) ~= math.floor(oldMapX) or math.floor(currentMap.metadata.mapY) ~= math.floor(oldMapY) then
         updateTilesetSpriteBatch()
     end
 end
+
+function preCollisionMovementCheck(direction)
+    -- body
+    if direction == 2 then
+        --return false
+        return true
+    else
+        return true
+    end
+end
+
+function preCollisionAction()
+    -- body
+
+end
+
+function preCollisionAction()
+    -- body
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

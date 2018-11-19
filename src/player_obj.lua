@@ -25,7 +25,11 @@ function initPlayerObject(playerName, playerType)
         distToCenterX = 7.5,
         distToCenterY = 4,
         zoomX = 3,
-        zoomY = 3
+        zoomY = 3,
+        upTile = 0,
+        rightTile = 0,
+        downTile = 0,
+        leftTile = 0
     }
 
     --Build movement tileset
