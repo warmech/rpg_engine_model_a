@@ -13,14 +13,16 @@ print("CWD: "..cwd)
 function love.load()
     love.window.setMode(768, 432)
 
-    tilemapFileName = "rpg_engine_model_a/dat/maps/01_first_world.map"
-    metadataFileName = "rpg_engine_model_a/dat/init/mapView_init.dat"
+    tilemapFileName = "rpg_engine_model_a/dat/maps/01/01.map"
+    metadataFileName = "rpg_engine_model_a/dat/maps/01/01.init"
+    tiledataFileName = "rpg_engine_model_a/dat/maps/01/01.dat"
     tilesetFileName = "gfx/tile/tileset_overworld.png"
     tileSize = 16
     playerName = "Will"
     playerType = "human_m"
 
     currentMap = buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
+    previousMap = currentMap
 
     playerCharacter = initPlayerObject(playerName, playerType)
 end
@@ -55,7 +57,7 @@ function love.draw()
     playerCharacter.gfx.zoomX, 
     playerCharacter.gfx.zoomY
     )
-  print("X: "..playerCharacter.gfx.xTilePosition)
-  print("Y: "..playerCharacter.gfx.yTilePosition)
+  --print("X: "..playerCharacter.gfx.xTilePosition)
+  --print("Y: "..playerCharacter.gfx.yTilePosition)
 end
 

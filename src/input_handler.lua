@@ -73,6 +73,12 @@ function mapInputDetect()
             playerCharacter.gfx.xTilePosition = currentMap.metadata.mapX + playerCharacter.gfx.distToCenterX
             playerCharacter.gfx.yTilePosition = currentMap.metadata.mapY + playerCharacter.gfx.distToCenterY
             --Update surrounding tile info
+            --[[ Need to resolve lack of data off of tilemap
+            if currentMap.tilemap[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition] == nil then
+                playerCharacter.gfx.upTile = 2
+            else
+                playerCharacter.gfx.upTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition]
+            ]]
             playerCharacter.gfx.upTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition]
             playerCharacter.gfx.rightTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition + 1]
             playerCharacter.gfx.downTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition + 1][playerCharacter.gfx.xTilePosition]

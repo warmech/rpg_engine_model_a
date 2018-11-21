@@ -48,6 +48,28 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
 	--Close metadata file
 	io.close(metadataFile)
 
+    --Open tiledata file and parse it to the tiledata table
+    local tiledataFile = io.open(tiledataFileName, "r")
+    io.input(tiledataFile)
+    local tiledataTable = fromCSV(io.read())
+
+    local tileMetadata = 
+    {
+        tileType = tonumber(tiledataTable[1]),
+        originMap = tiledataTable[2],
+        originX = tonumber(tiledataTable[3]),
+        originY = tonumber(tiledataTable[4]),
+        destMap = tiledataTable[5],
+        destX = tonumber(tiledataTable[6]),
+        destY = tonumber(tiledataTable[7]),
+        active = tonumber(tiledataTable[8]),
+        transition = tonumber(tiledataTable[9]),
+        event = tonumber(tiledataTable[10])
+    }
+
+    --Close metadata file
+    io.close(tiledataFile)
+
 	--Create quad table and import the appropriate tileset file
 	local tilesetQuads = {}
 	local tilesetFile = love.graphics.newImage(tilesetFileName)
@@ -87,7 +109,7 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
 	newTilesetSpriteBatch:flush()
 
 	--Compile and return map object
-	local mapObject = {tilemap = mapTable, metadata = mapMetadata, tileset = tilesetQuads, tilesetSpriteBatch = newTilesetSpriteBatch}
+	local mapObject = {tilemap = mapTable, metadata = mapMetadata, tiledata = tileMetadata, tileset = tilesetQuads, tilesetSpriteBatch = newTilesetSpriteBatch}
 	return mapObject
 end
 
@@ -140,8 +162,8 @@ end
 function preCollisionMovementCheck(direction)
     -- body
     if direction == 2 then
-        --return false
-        return true
+        return false
+        --return true
     else
         return true
     end
@@ -152,7 +174,7 @@ function preCollisionAction()
 
 end
 
-function preCollisionAction()
+function postCollisionAction()
     -- body
 end
 
