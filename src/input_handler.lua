@@ -70,8 +70,8 @@ function mapInputDetect()
             playerCharacter.gfx.movementCurrentDuration = 1
             playerCharacter.gfx.movementLockout = false
             --Update sprite location on tilemap
-            playerCharacter.gfx.xTilePosition = currentMap.metadata.mapX + playerCharacter.gfx.distToCenterX
-            playerCharacter.gfx.yTilePosition = currentMap.metadata.mapY + playerCharacter.gfx.distToCenterY
+            playerCharacter.gfx.xTilePosition = currentMap.metadata.mapMetadata.mapX + playerCharacter.gfx.distToCenterX
+            playerCharacter.gfx.yTilePosition = currentMap.metadata.mapMetadata.mapY + playerCharacter.gfx.distToCenterY
             --Update surrounding tile info
             --[[ Need to resolve lack of data off of tilemap
             if currentMap.tilemap[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition] == nil then
@@ -79,10 +79,15 @@ function mapInputDetect()
             else
                 playerCharacter.gfx.upTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition]
             ]]
+
+            --postCollisionAction()
+
             playerCharacter.gfx.upTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition]
             playerCharacter.gfx.rightTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition + 1]
             playerCharacter.gfx.downTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition + 1][playerCharacter.gfx.xTilePosition]
             playerCharacter.gfx.leftTile = currentMap.tilemap[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition - 1]
+
+            postCollisionAction()
         else
             moveMap()
             playerCharacter.gfx.movementCurrentDuration = playerCharacter.gfx.movementCurrentDuration + 1

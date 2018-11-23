@@ -1,0 +1,120 @@
+metadata = 
+{    
+    mapMetadata = 
+    {
+    	mapX = 51.5,
+        mapY = 54,
+        aspectX = 16,
+        aspectY = 9,
+        widthBuffer = 2,
+        heightBuffer = 2,
+        zoomX = 3,
+        zoomY = 3,
+        mapWidth = 80,
+        mapHeight = 73,
+        tilesDisplayWidth = 18,
+        tilesDisplayHeight = 11,
+        mapBoundaryOffset = .5,
+        nogoTileTypes = {2, 7, 8, 9, 10, 15, 16}
+    },
+    doorMetadata = 
+    {
+        {
+            doorName = "Hometown_Tile",
+            tileType = 1,
+            originMap = "01",
+            originX = 58,
+            originY = 58,
+            destMap = "02",
+            destX = 30,
+            destY = 21,
+            active = true,
+            transition = 1,
+            event = 0
+        },
+        {
+            doorName = "North_Cave_Entrance",
+            tileType = 1,
+            originMap = "01",
+            originX = 57,
+            originY = 49,
+            destMap = "01",
+            destX = 59,
+            destY = 58,
+            active = true,
+            transition = 1,
+            event = 0
+        },
+        {
+            doorName = "North_Cave_Exit",
+            tileType = 1,
+            originMap = "01",
+            originX = 59,
+            originY = 47,
+            destMap = "03",
+            destX = 23,
+            destY = 18,
+            active = true,
+            transition = 1,
+            event = 0
+        },
+        {
+            doorName = "Character_02_House_Entrance",
+            tileType = 1,
+            originMap = "01",
+            originX = 21,
+            originY = 25,
+            destMap = "04",
+            destX = 14,
+            destY = 16,
+            active = true,
+            transition = 1,
+            event = 0
+        },
+        {
+            doorName = "Player_House_Entrance",
+            tileType = 1,
+            originMap = "01",
+            originX = 22,
+            originY = 33,
+            destMap = "05",
+            destX = 14,
+            destY = 16,
+            active = true,
+            transition = 1,
+            event = 0
+        },
+        {
+            doorName = "Character_04_House_Entrance",
+            tileType = 1,
+            originMap = "01",
+            originX = 14,
+            originY = 35,
+            destMap = "06",
+            destX = 14,
+            destY = 16,
+            active = true,
+            transition = 1,
+            event = 0
+        },
+        {
+            doorName = "Character_03_House_Entrance",
+            tileType = 1,
+            originMap = "01",
+            originX = 13,
+            originY = 28,
+            destMap = "07",
+            destX = 14,
+            destY = 16,
+            active = true,
+            transition = 1,
+            event = 0
+        }
+    }
+}
+
+return metadata
+
+
+
+

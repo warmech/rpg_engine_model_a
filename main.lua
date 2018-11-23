@@ -13,16 +13,18 @@ print("CWD: "..cwd)
 function love.load()
     love.window.setMode(768, 432)
 
-    tilemapFileName = "rpg_engine_model_a/dat/maps/01/01.map"
-    metadataFileName = "rpg_engine_model_a/dat/maps/01/01.init"
-    tiledataFileName = "rpg_engine_model_a/dat/maps/01/01.dat"
-    tilesetFileName = "gfx/tile/tileset_overworld.png"
+    tilemapFileName =   "rpg_engine_model_a/dat/maps/01/map"
+    metadataFileName =  "rpg_engine_model_a/dat/maps/01/metadata"
+    tilesetFileName =   "dat/maps/01/tileset.png"
     tileSize = 16
     playerName = "Will"
     playerType = "human_m"
 
-    currentMap = buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
-    previousMap = currentMap
+    startX = 51.5
+    startY = 54
+
+    currentMap = buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize, startX, startY)
+    --previousMap = currentMap
 
     playerCharacter = initPlayerObject(playerName, playerType)
 end
@@ -41,18 +43,18 @@ end
 function love.draw()
   love.graphics.draw(
     currentMap.tilesetSpriteBatch, 
-    math.floor(-(currentMap.metadata.zoomX) * ((currentMap.metadata.mapX) % 1) * tileSize), 
-    math.floor(-(currentMap.metadata.zoomY) * ((currentMap.metadata.mapY) % 1) * tileSize), 
+    math.floor(-(currentMap.metadata.mapMetadata.zoomX) * ((currentMap.metadata.mapMetadata.mapX) % 1) * tileSize), 
+    math.floor(-(currentMap.metadata.mapMetadata.zoomY) * ((currentMap.metadata.mapMetadata.mapY) % 1) * tileSize), 
     0, 
-    (currentMap.metadata.zoomX), 
-    (currentMap.metadata.zoomY)
+    (currentMap.metadata.mapMetadata.zoomX), 
+    (currentMap.metadata.mapMetadata.zoomY)
     )
 
   love.graphics.draw(
     playerCharacter.sprite, 
     playerCharacter.tileset[playerCharacter.gfx.movementState], 
-    (playerCharacter.gfx.tileSize * currentMap.metadata.zoomX) * playerCharacter.gfx.distToCenterX, 
-    (playerCharacter.gfx.tileSize * currentMap.metadata.zoomY) * playerCharacter.gfx.distToCenterY, 
+    (playerCharacter.gfx.tileSize * currentMap.metadata.mapMetadata.zoomX) * playerCharacter.gfx.distToCenterX, 
+    (playerCharacter.gfx.tileSize * currentMap.metadata.mapMetadata.zoomY) * playerCharacter.gfx.distToCenterY, 
     0, 
     playerCharacter.gfx.zoomX, 
     playerCharacter.gfx.zoomY

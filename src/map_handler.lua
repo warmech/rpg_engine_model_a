@@ -1,4 +1,4 @@
-function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
+function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize, startX, startY)
 	--Open tilemap data file
 	local tilemapFile = io.open(tilemapFileName, "r")
 	io.input(tilemapFile)
@@ -23,56 +23,17 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
 	--Close tilemap file
 	io.close(tilemapFile)
 
-	--Open metadata file and parse it to the metadata table
-	local metadataFile = io.open(metadataFileName, "r")
-	io.input(metadataFile)
-	local metadataTable = readNumericalCSV(io.read())
+    local mapData = loadTable(metadataFileName)
+    mapData.mapMetadata.mapX = startX
+    mapData.mapMetadata.mapY = startY
 
-    local mapMetadata = 
-    {
-        mapX = metadataTable[1],
-        mapY = metadataTable[2],
-        aspectX = metadataTable[3],
-        aspectY = metadataTable[4],
-        widthBuffer = metadataTable[5],
-        heightBuffer = metadataTable[6],
-        zoomX = metadataTable[7],
-        zoomY = metadataTable[8],
-        mapWidth = columnCount,
-        mapHeight = rowCount,
-        tilesDisplayWidth = (metadataTable[3] + metadataTable[5]),
-        tilesDisplayHeight = (metadataTable[4] + metadataTable[6]),
-        mapBoundaryOffset = .5
-    }
-
-	--Close metadata file
-	io.close(metadataFile)
-
-    --Open tiledata file and parse it to the tiledata table
-    local tiledataFile = io.open(tiledataFileName, "r")
-    io.input(tiledataFile)
-    local tiledataTable = fromCSV(io.read())
-
-    local tileMetadata = 
-    {
-        tileType = tonumber(tiledataTable[1]),
-        originMap = tiledataTable[2],
-        originX = tonumber(tiledataTable[3]),
-        originY = tonumber(tiledataTable[4]),
-        destMap = tiledataTable[5],
-        destX = tonumber(tiledataTable[6]),
-        destY = tonumber(tiledataTable[7]),
-        active = tonumber(tiledataTable[8]),
-        transition = tonumber(tiledataTable[9]),
-        event = tonumber(tiledataTable[10])
-    }
-
-    --Close metadata file
-    io.close(tiledataFile)
+    print("Start X: "..mapData.mapMetadata.mapX)
+    print("Start Y: "..mapData.mapMetadata.mapY)
 
 	--Create quad table and import the appropriate tileset file
 	local tilesetQuads = {}
 	local tilesetFile = love.graphics.newImage(tilesetFileName)
+
 	--This filter is configurable based upon game settings, but should probably be locked to nearest/nearest
 	local filter_min = "nearest"
 	local filter_mag = "nearest"
@@ -90,18 +51,17 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
 	end
 
 	--Create a new sprite batch (the viewable area of the map) with the tileset file
-	local newTilesetSpriteBatch = love.graphics.newSpriteBatch(tilesetFile, mapMetadata.tilesDisplayWidth * mapMetadata.tilesDisplayHeight)
+	local newTilesetSpriteBatch = love.graphics.newSpriteBatch(tilesetFile, mapData.mapMetadata.tilesDisplayWidth * mapData.mapMetadata.tilesDisplayHeight)
 
 	--Clear out the viewable area of the map
 	newTilesetSpriteBatch:clear()
 
 	--Iterate down the rows of the map tiles displayed on screen
-	for y = 0, (mapMetadata.tilesDisplayHeight - 1) do
+	for y = 0, (mapData.mapMetadata.tilesDisplayHeight - 1) do
 		--Iterate across the columns of the map tiles displayed on screen
-		for x = 0, (mapMetadata.tilesDisplayWidth - 1) do
+		for x = 0, (mapData.mapMetadata.tilesDisplayWidth - 1) do
 			--Write the appropriate tile to the current cell in the sprite batch
-            --newTilesetSpriteBatch:add(tilesetQuads[tonumber(mapTable[y + math.floor(mapMetadata.mapY)][x + math.floor(mapMetadata.mapX)])], x * tileSize, y * tileSize)
-			newTilesetSpriteBatch:add(tilesetQuads[mapTable[y + math.floor(mapMetadata.mapY)][x + math.floor(mapMetadata.mapX)]], x * tileSize, y * tileSize)
+			newTilesetSpriteBatch:add(tilesetQuads[mapTable[y + math.floor(mapData.mapMetadata.mapY)][x + math.floor(mapData.mapMetadata.mapX)]], x * tileSize, y * tileSize)
 		end
 	end
 
@@ -109,7 +69,7 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize)
 	newTilesetSpriteBatch:flush()
 
 	--Compile and return map object
-	local mapObject = {tilemap = mapTable, metadata = mapMetadata, tiledata = tileMetadata, tileset = tilesetQuads, tilesetSpriteBatch = newTilesetSpriteBatch}
+	local mapObject = {tilemap = mapTable, metadata = mapData, tileset = tilesetQuads, tilesetSpriteBatch = newTilesetSpriteBatch}
 	return mapObject
 end
 
@@ -118,11 +78,11 @@ function updateTilesetSpriteBatch()
     currentMap.tilesetSpriteBatch:clear()
 
     --Iterate down the rows of the map tiles displayed on screen
-    for y = 0, (currentMap.metadata.tilesDisplayHeight - 1) do
+    for y = 0, (currentMap.metadata.mapMetadata.tilesDisplayHeight - 1) do
         --Iterate across the columns of the map tiles displayed on screen
-        for x = 0, (currentMap.metadata.tilesDisplayWidth - 1) do
+        for x = 0, (currentMap.metadata.mapMetadata.tilesDisplayWidth - 1) do
             --Write the appropriate tile to the current cell in the sprite batch
-            currentMap.tilesetSpriteBatch:add(currentMap.tileset[currentMap.tilemap[y + math.floor(currentMap.metadata.mapY)][x + math.floor(currentMap.metadata.mapX)]], x * 16, y * 16)
+            currentMap.tilesetSpriteBatch:add(currentMap.tileset[currentMap.tilemap[y + math.floor(currentMap.metadata.mapMetadata.mapY)][x + math.floor(currentMap.metadata.mapMetadata.mapX)]], x * 16, y * 16)
         end
     end
 
@@ -131,42 +91,25 @@ function updateTilesetSpriteBatch()
 
 end
 
---[[
-function moveMap(dx, dy)
-    local oldMapX = currentMap.metadata.mapX
-    local oldMapY = currentMap.metadata.mapY
-    currentMap.metadata.mapX = math.max(math.min(currentMap.metadata.mapX + dx, currentMap.metadata.mapWidth - currentMap.metadata.tilesDisplayWidth + currentMap.metadata.mapBoundaryOffset), 1)
-    currentMap.metadata.mapY = math.max(math.min(currentMap.metadata.mapY + dy, currentMap.metadata.mapHeight - currentMap.metadata.tilesDisplayHeight + currentMap.metadata.mapBoundaryOffset), 1)
-
-    -- only update if we actually moved
-    if math.floor(currentMap.metadata.mapX) ~= math.floor(oldMapX) or math.floor(currentMap.metadata.mapY) ~= math.floor(oldMapY) then
-        updateTilesetSpriteBatch()
-    end
-end
-]]
-
 function moveMap()
-    local oldMapX = currentMap.metadata.mapX
-    local oldMapY = currentMap.metadata.mapY
-    currentMap.metadata.mapX = math.max(math.min(currentMap.metadata.mapX + playerCharacter.gfx.xDelta, currentMap.metadata.mapWidth - currentMap.metadata.tilesDisplayWidth + currentMap.metadata.mapBoundaryOffset), 1)
-    currentMap.metadata.mapY = math.max(math.min(currentMap.metadata.mapY + playerCharacter.gfx.yDelta, currentMap.metadata.mapHeight - currentMap.metadata.tilesDisplayHeight + currentMap.metadata.mapBoundaryOffset), 1)
-    --print("mapX + xDelta: "..currentMap.metadata.mapX + playerCharacter.gfx.xDelta)
-    --print("mapWidth + tilesDisplayWidth + offset: "..currentMap.metadata.mapWidth - currentMap.metadata.tilesDisplayWidth + currentMap.metadata.mapBoundaryOffset)
+    local oldMapX = currentMap.metadata.mapMetadata.mapX
+    local oldMapY = currentMap.metadata.mapMetadata.mapY
+    currentMap.metadata.mapMetadata.mapX = math.max(math.min(currentMap.metadata.mapMetadata.mapX + playerCharacter.gfx.xDelta, currentMap.metadata.mapMetadata.mapWidth - currentMap.metadata.mapMetadata.tilesDisplayWidth + currentMap.metadata.mapMetadata.mapBoundaryOffset), 1)
+    currentMap.metadata.mapMetadata.mapY = math.max(math.min(currentMap.metadata.mapMetadata.mapY + playerCharacter.gfx.yDelta, currentMap.metadata.mapMetadata.mapHeight - currentMap.metadata.mapMetadata.tilesDisplayHeight + currentMap.metadata.mapMetadata.mapBoundaryOffset), 1)
 
     -- only update if we actually moved
-    if math.floor(currentMap.metadata.mapX) ~= math.floor(oldMapX) or math.floor(currentMap.metadata.mapY) ~= math.floor(oldMapY) then
+    if math.floor(currentMap.metadata.mapMetadata.mapX) ~= math.floor(oldMapX) or math.floor(currentMap.metadata.mapMetadata.mapY) ~= math.floor(oldMapY) then
         updateTilesetSpriteBatch()
     end
 end
 
 function preCollisionMovementCheck(direction)
-    -- body
-    if direction == 2 then
-        return false
-        --return true
-    else
-        return true
+    for i = 1, (#currentMap.metadata.mapMetadata.nogoTileTypes) do
+        if direction == currentMap.metadata.mapMetadata.nogoTileTypes[i] then
+            return false
+        end
     end
+    return true
 end
 
 function preCollisionAction()
@@ -175,7 +118,27 @@ function preCollisionAction()
 end
 
 function postCollisionAction()
-    -- body
+
+
+    for i = 1, (#currentMap.metadata.doorMetadata) do
+        if (currentMap.metadata.doorMetadata[i].originX == playerCharacter.gfx.xTilePosition) then
+            if (currentMap.metadata.doorMetadata[i].originY == playerCharacter.gfx.yTilePosition) then
+
+                previousMap = currentMap
+
+                tilemapFileName = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.doorMetadata[i].destMap.."/map"
+                metadataFileName = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.doorMetadata[i].destMap.."/metadata"
+                tilesetFileName = "dat/maps/"..currentMap.metadata.doorMetadata[i].destMap.."/tileset.png"
+
+                newMapDestX = (currentMap.metadata.doorMetadata[i].destX - 8.5)
+                newMapDestY = (currentMap.metadata.doorMetadata[i].destY - 4)
+
+                currentMap = buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize, newMapDestX, newMapDestY)
+                break
+            end
+        end
+    end
+        
 end
 
 
