@@ -27,6 +27,9 @@ function love.load()
     --previousMap = currentMap
 
     playerCharacter = initPlayerObject(playerName, playerType)
+    
+    playerCharacter.gfx.xTilePosition = currentMap.metadata.mapMetadata.mapX + playerCharacter.gfx.distToCenterX
+    playerCharacter.gfx.yTilePosition = currentMap.metadata.mapMetadata.mapY + playerCharacter.gfx.distToCenterY
 end
 
 function love.keypressed(key)
@@ -38,6 +41,13 @@ end
 function love.update(dt)
     mapInputDetect()
     drawPlayerCharacter()
+    print(playerCharacter.gfx.xTilePosition)
+    print(playerCharacter.gfx.yTilePosition)
+    --print(playerCharacter.gfx.movementLockout)
+    --print(playerCharacter.gfx.upTile)
+    --print(playerCharacter.gfx.rightTile)
+    --print(playerCharacter.gfx.downTile)
+    --print(playerCharacter.gfx.leftTile)
 end
 
 function love.draw()
@@ -59,7 +69,5 @@ function love.draw()
     playerCharacter.gfx.zoomX, 
     playerCharacter.gfx.zoomY
     )
-  --print("X: "..playerCharacter.gfx.xTilePosition)
-  --print("Y: "..playerCharacter.gfx.yTilePosition)
 end
 

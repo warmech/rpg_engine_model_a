@@ -27,9 +27,6 @@ function buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize, 
     mapData.mapMetadata.mapX = startX
     mapData.mapMetadata.mapY = startY
 
-    print("Start X: "..mapData.mapMetadata.mapX)
-    print("Start Y: "..mapData.mapMetadata.mapY)
-
 	--Create quad table and import the appropriate tileset file
 	local tilesetQuads = {}
 	local tilesetFile = love.graphics.newImage(tilesetFileName)
@@ -89,6 +86,8 @@ function updateTilesetSpriteBatch()
     --Render data to GPU and return updated map sprite batch
     currentMap.tilesetSpriteBatch:flush()
 
+
+
 end
 
 function moveMap()
@@ -114,7 +113,6 @@ end
 
 function preCollisionAction()
     -- body
-
 end
 
 function postCollisionAction()
@@ -124,16 +122,26 @@ function postCollisionAction()
         if (currentMap.metadata.doorMetadata[i].originX == playerCharacter.gfx.xTilePosition) then
             if (currentMap.metadata.doorMetadata[i].originY == playerCharacter.gfx.yTilePosition) then
 
-                previousMap = currentMap
-
                 tilemapFileName = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.doorMetadata[i].destMap.."/map"
                 metadataFileName = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.doorMetadata[i].destMap.."/metadata"
                 tilesetFileName = "dat/maps/"..currentMap.metadata.doorMetadata[i].destMap.."/tileset.png"
 
-                newMapDestX = (currentMap.metadata.doorMetadata[i].destX - 8.5)
-                newMapDestY = (currentMap.metadata.doorMetadata[i].destY - 4)
+                newMapDestX = currentMap.metadata.doorMetadata[i].destX
+                newMapDestY = currentMap.metadata.doorMetadata[i].destY
 
-                currentMap = buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize, newMapDestX, newMapDestY)
+                newMapDrawX = (newMapDestX - 7.5)
+                newMapDrawY = (newMapDestY - 4)
+
+                currentMap = buildMap(tilemapFileName, metadataFileName, tilesetFileName, tileSize, newMapDrawX, newMapDrawY)
+
+                playerCharacter.gfx.xTilePosition = currentMap.metadata.mapMetadata.mapX + playerCharacter.gfx.distToCenterX
+                playerCharacter.gfx.yTilePosition = currentMap.metadata.mapMetadata.mapY + playerCharacter.gfx.distToCenterY
+                
+                playerCharacter.gfx.upTile = currentMap.tilemap[newMapDestY - 1][newMapDestX]
+                playerCharacter.gfx.rightTile = currentMap.tilemap[newMapDestY][newMapDestX + 1]
+                playerCharacter.gfx.downTile = currentMap.tilemap[newMapDestY + 1][newMapDestX]
+                playerCharacter.gfx.leftTile = currentMap.tilemap[newMapDestY][newMapDestX - 1]         
+
                 break
             end
         end
