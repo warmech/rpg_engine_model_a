@@ -1,0 +1,39 @@
+metadata = 
+{
+    mapName = "Third Party Member's House",
+	mapX = 0,
+    mapY = 0,
+    aspectX = 16,
+    aspectY = 9,
+    widthBuffer = 2,
+    heightBuffer = 2,
+    zoomX = 3,
+    zoomY = 3,
+    mapWidth = 31,
+    mapHeight = 27,
+    tilesDisplayWidth = 18,
+    tilesDisplayHeight = 11,
+    mapBoundaryOffset = .5,
+    doorMetadata = 
+    {
+        {
+            doorName = "House_Exit",
+            tileType = 1,
+            originMap = "07",
+            originX = 16,
+            originY = 18,
+            destMap = "02",
+            destX = 15,
+            destY = 29,
+            active = true,
+            transition = 1,
+            event = 0
+        }
+    }
+}
+
+return metadata
+
+
+
+

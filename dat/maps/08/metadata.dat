@@ -1,0 +1,39 @@
+metadata = 
+{
+    mapName = "Player's House Upstairs",
+	mapX = 0,
+    mapY = 0,
+    aspectX = 16,
+    aspectY = 9,
+    widthBuffer = 2,
+    heightBuffer = 2,
+    zoomX = 3,
+    zoomY = 3,
+    mapWidth = 27,
+    mapHeight = 24,
+    tilesDisplayWidth = 18,
+    tilesDisplayHeight = 11,
+    mapBoundaryOffset = .5,
+    doorMetadata = 
+    {
+        {
+            doorName = "Upstairs_Exit",
+            tileType = 1,
+            originMap = "08",
+            originX = 14,
+            originY = 16,
+            destMap = "05",
+            destX = 16,
+            destY = 11,
+            active = true,
+            transition = 1,
+            event = 0
+        }
+    }
+}
+
+return metadata
+
+
+
+
