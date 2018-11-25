@@ -1,5 +1,24 @@
 --Additions to map metadata
-elevationFlag_01 = false
+mapDrawOrder = 
+{
+    "bottomLayer",
+    "spriteLayer",
+    "topLayer"
+}
+
+elevationFlag = 
+{
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+}
 
 xformTileTable = 
 {

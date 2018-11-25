@@ -103,6 +103,10 @@ function moveMap()
     end
 end
 
+
+
+
+
 function tileAnimate()
     -- body
     
@@ -149,7 +153,7 @@ function postCollisionAction()
                     playerCharacter.gfx.upTile = currentMap.tilemap.collision[newMapDestY - 1][newMapDestX]
                     playerCharacter.gfx.rightTile = currentMap.tilemap.collision[newMapDestY][newMapDestX + 1]
                     playerCharacter.gfx.downTile = currentMap.tilemap.collision[newMapDestY + 1][newMapDestX]
-                    playerCharacter.gfx.leftTile = currentMap.tilemap.collision[newMapDestY][newMapDestX - 1]         
+                    playerCharacter.gfx.leftTile = currentMap.tilemap.collision[newMapDestY][newMapDestX - 1]
 
                     break
                 end

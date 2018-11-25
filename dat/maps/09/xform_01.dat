@@ -2,15 +2,17 @@ collisionRewriteTable =
 {
     upper = 
     {
-        x = {1, 2, 3},
-        y = {1, 2, 3}
+        x = {45,45,45,46,47,48,49,50,44,44,47,47,50,51,52,50,51,52,50,52},
+        y = {30,31,32,33,33,33,33,33,38,39,38,39,39,39,39,40,40,40,41,41}
     },
     lower = 
     {
-        x = {1, 2, 3},
-        y = {1, 2, 3}
+        x = {46,46,46,47,48,49,50,43,48,49,50,51,52,43,53,49,53,49,53},
+        y = {30,31,32,32,32,32,32,38,38,38,38,38,38,39,39,40,40,41,41}
     }
 }
+
+elevationFlagIndex = 1
 
 --When ascending to a higher elevation, do this
 if (elevation_flag == true)
@@ -32,13 +34,63 @@ if (elevation_flag == false)
     --Update collision info for adjacent tiles in the playerCharacter object's gfx table so that the correct collision can occur on the next keypress
 end
 
---Upper elevation switch tile does this
-if (elevation_flag == false)
-    --Ser elevation_flag = true
-    --Iterate through list of x/y coordinates in rewrite table
-        --At each upper coordinate, change the corresponding collision value at said x/y index to (0) 
+
+--Upper elevation switch tile does the following to lock the player to the upper elevation
+if (elevation_flag[elevationFlagIndex] == false)
+    --Set elevationFlag to true
+    currentMap.metadata.elevationFlag[elevationFlagIndex] = true
+    --Iterate through list of x/y coordinates in upper rewrite table
+    for i = 1, (#collisionRewriteTable.upper.x) do
+        --At each upper coordinate, change the corresponding collision value at said x/y index to (0)
+        currentMap.tilemap.collision[collisionRewriteTable.upper.y[i]][collisionRewriteTable.upper.x[i]] = 0
+    end
+    --Iterate through list of x/y coordinates in lower rewrite table
+    for i = 1, (#collisionRewriteTable.lower.x) do
         --At each lower coordinate, change the corresponding collision value at said x/y index to (1)
-        --This forces the player to be locked to the lower elevation
+        currentMap.tilemap.collision[collisionRewriteTable.lower.y[i]][collisionRewriteTable.lower.x[i]] = 1
+    end
+
     --Change draw order to draw the player above the top layer (to be drawn underneath bridges)
+    currentMap.metadata.mapDrawOrder = 
+    {
+        "bottomLayer",
+        "topLayer",
+        "spriteLayer"
+    }
+
     --Update collision info for adjacent tiles in the playerCharacter object's gfx table so that the correct collision can occur on the next keypress
+    playerCharacter.gfx.upTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition]
+    playerCharacter.gfx.rightTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition + 1]
+    playerCharacter.gfx.downTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition + 1][playerCharacter.gfx.xTilePosition]
+    playerCharacter.gfx.leftTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition - 1]
+end
+
+--Lower elevation switch tile does the following to lock the player to the lower elevation
+if (elevation_flag[elevationFlagIndex] == true)
+    --Set elevationFlag to true
+    currentMap.metadata.elevationFlag[elevationFlagIndex] = false
+    --Iterate through list of x/y coordinates in upper rewrite table
+    for i = 1, (#collisionRewriteTable.lower.x) do
+        --At each upper coordinate, change the corresponding collision value at said x/y index to (0)
+        currentMap.tilemap.collision[collisionRewriteTable.lower.y[i]][collisionRewriteTable.lower.x[i]] = 0
+    end
+    --Iterate through list of x/y coordinates in lower rewrite table
+    for i = 1, (#collisionRewriteTable.upper.x) do
+        --At each lower coordinate, change the corresponding collision value at said x/y index to (1)
+        currentMap.tilemap.collision[collisionRewriteTable.upper.y[i]][collisionRewriteTable.upper.x[i]] = 1
+    end
+
+    --Change draw order to draw the player above the top layer (to be drawn underneath bridges)
+    currentMap.metadata.mapDrawOrder = 
+    {
+        "bottomLayer",
+        "spriteLayer",
+        "topLayer"        
+    }
+
+    --Update collision info for adjacent tiles in the playerCharacter object's gfx table so that the correct collision can occur on the next keypress
+    playerCharacter.gfx.upTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition]
+    playerCharacter.gfx.rightTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition + 1]
+    playerCharacter.gfx.downTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition + 1][playerCharacter.gfx.xTilePosition]
+    playerCharacter.gfx.leftTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition - 1]
 end
