@@ -1,0 +1,44 @@
+collisionRewriteTable = 
+{
+    upper = 
+    {
+        x = {1, 2, 3},
+        y = {1, 2, 3}
+    },
+    lower = 
+    {
+        x = {1, 2, 3},
+        y = {1, 2, 3}
+    }
+}
+
+--When ascending to a higher elevation, do this
+if (elevation_flag == true)
+    --Iterate through list of x/y coordinates in rewrite table
+        --At each upper coordinate, change the corresponding collision value at said x/y index to (0) 
+        --At each lower coordinate, change the corresponding collision value at said x/y index to (1)
+        --This forces the player to be locked to the higher elevation
+    --Change draw order to draw the player above the top layer (to be drawn on top of bridges)
+    --Update collision info for adjacent tiles in the playerCharacter object's gfx table so that the correct collision can occur on the next keypress
+end
+
+--When descending to a lower elevation, do this
+if (elevation_flag == false)
+    --Iterate through list of x/y coordinates in rewrite table
+        --At each upper coordinate, change the corresponding collision value at said x/y index to (1) 
+        --At each lower coordinate, change the corresponding collision value at said x/y index to (0)
+        --This forces the player to be locked to the lower elevation
+    --Change draw order to draw the player above the top layer (to be drawn underneath bridges)
+    --Update collision info for adjacent tiles in the playerCharacter object's gfx table so that the correct collision can occur on the next keypress
+end
+
+--Upper elevation switch tile does this
+if (elevation_flag == false)
+    --Ser elevation_flag = true
+    --Iterate through list of x/y coordinates in rewrite table
+        --At each upper coordinate, change the corresponding collision value at said x/y index to (0) 
+        --At each lower coordinate, change the corresponding collision value at said x/y index to (1)
+        --This forces the player to be locked to the lower elevation
+    --Change draw order to draw the player above the top layer (to be drawn underneath bridges)
+    --Update collision info for adjacent tiles in the playerCharacter object's gfx table so that the correct collision can occur on the next keypress
+end

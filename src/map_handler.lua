@@ -103,6 +103,11 @@ function moveMap()
     end
 end
 
+function tileAnimate()
+    -- body
+    
+end
+
 function preCollisionMovementCheck(direction)
     --Check if tile is impassable
     if direction == 1 then
