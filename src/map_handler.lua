@@ -113,7 +113,7 @@ function tileAnimate()
 end
 
 function preCollisionMovementCheck(direction)
-    --Check if tile is impassable
+    --Check if tile is impassable (tile type 1)
     if direction == 1 then
         return false
     else
@@ -128,7 +128,7 @@ end
 
 
 function postCollisionAction()
-    --Check if tile is a door/teleporter
+    --Check if tile is a door/teleporter (tile type 2)
 
     print("Tile: "..currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition])
     print("X: "..playerCharacter.gfx.xTilePosition)
@@ -161,15 +161,15 @@ function postCollisionAction()
         end 
     end
 
-    --Check if tile is searchable by the player
+    --Check if tile is searchable by the player (tile type 3)
 
-    --Check if tile is a multi-planar bridge
+    --Check if tile is an elevation switch (tile type 4)
 
-    --Check if the tile is an event tile
+    --Check if the tile is an event tile (tile type 5)
 
-    --Check if tile is a room transformation tile
+    --Check if tile is a room transformation tile (tile type 6)
 
-    --Check if tile is a damage tile (lava/poison/etc.)
+    --Check if tile is a damage-dealing tile (tile type 7)
 
 end
 
