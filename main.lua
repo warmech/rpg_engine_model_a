@@ -13,13 +13,16 @@ print("CWD: "..cwd)
 function love.load()
     love.window.setMode(768, 432)
 
-    mapNumber = "01"
+    mapNumber = "09"
+    --mapNumber = "01"
     tileSize = 16
     playerName = "Will"
     playerType = "human_m"
 
-    startX = 53.5
-    startY = 54
+    startX = 42.5
+    startY = 27
+    --startX = 53.5
+    --startY = 54
 
     currentMap = buildMap(mapNumber, startX, startY)
 
@@ -41,33 +44,39 @@ function love.update(dt)
 end
 
 function love.draw()
-    --Draw Bottom Layer
-    love.graphics.draw(
-        currentMap.layers.bottom, 
-        math.floor(-(currentMap.metadata.zoomX) * ((currentMap.metadata.mapX) % 1) * tileSize), 
-        math.floor(-(currentMap.metadata.zoomY) * ((currentMap.metadata.mapY) % 1) * tileSize), 
-        0, 
-        (currentMap.metadata.zoomX), 
-        (currentMap.metadata.zoomY)
-    )
-    --Draw character sprite
-    love.graphics.draw(
-        playerCharacter.sprite, 
-        playerCharacter.tileset[playerCharacter.gfx.movementState], 
-        (playerCharacter.gfx.tileSize * currentMap.metadata.zoomX) * playerCharacter.gfx.distToCenterX, 
-        (playerCharacter.gfx.tileSize * currentMap.metadata.zoomY) * playerCharacter.gfx.distToCenterY, 
-        0, 
-        playerCharacter.gfx.zoomX, 
-        playerCharacter.gfx.zoomY
-    )
-    --Draw Top Layer
-    love.graphics.draw(
-        currentMap.layers.top, 
-        math.floor(-(currentMap.metadata.zoomX) * ((currentMap.metadata.mapX) % 1) * tileSize), 
-        math.floor(-(currentMap.metadata.zoomY) * ((currentMap.metadata.mapY) % 1) * tileSize), 
-        0, 
-        (currentMap.metadata.zoomX), 
-        (currentMap.metadata.zoomY)
-    )
+    --Iterator for drawing the map and sprite objects
+    for i = 1, currentMap.metadata.mapDrawLayers do
+        if (currentMap.metadata.mapDrawOrder[i] == "bottomLayer") then
+            --Draw Bottom Layer
+            love.graphics.draw(
+                currentMap.layers.bottom, 
+                math.floor(-(currentMap.metadata.zoomX) * ((currentMap.metadata.mapX) % 1) * tileSize), 
+                math.floor(-(currentMap.metadata.zoomY) * ((currentMap.metadata.mapY) % 1) * tileSize), 
+                0, 
+                (currentMap.metadata.zoomX), 
+                (currentMap.metadata.zoomY)
+            )
+        elseif (currentMap.metadata.mapDrawOrder[i] == "spriteLayer") then
+            --Draw character sprite
+            love.graphics.draw(
+                playerCharacter.sprite, 
+                playerCharacter.tileset[playerCharacter.gfx.movementState], 
+                (playerCharacter.gfx.tileSize * currentMap.metadata.zoomX) * playerCharacter.gfx.distToCenterX, 
+                (playerCharacter.gfx.tileSize * currentMap.metadata.zoomY) * playerCharacter.gfx.distToCenterY, 
+                0, 
+                playerCharacter.gfx.zoomX, 
+                playerCharacter.gfx.zoomY
+            )
+        elseif (currentMap.metadata.mapDrawOrder[i] == "topLayer") then
+            --Draw Top Layer
+            love.graphics.draw(
+                currentMap.layers.top, 
+                math.floor(-(currentMap.metadata.zoomX) * ((currentMap.metadata.mapX) % 1) * tileSize), 
+                math.floor(-(currentMap.metadata.zoomY) * ((currentMap.metadata.mapY) % 1) * tileSize), 
+                0, 
+                (currentMap.metadata.zoomX), 
+                (currentMap.metadata.zoomY)
+            )
+        end
+    end   
 end
-

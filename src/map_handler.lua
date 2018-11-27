@@ -168,6 +168,17 @@ function postCollisionAction()
     --Check if the tile is an event tile (tile type 5)
 
     --Check if tile is a room transformation tile (tile type 6)
+    if (currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition] == 6) then
+        for i = 1, (#currentMap.metadata.xformTileTable.script) do
+            if (currentMap.metadata.xformTileTable.y[i] == playerCharacter.gfx.yTilePosition) then
+                if (currentMap.metadata.xformTileTable.x[i] == playerCharacter.gfx.xTilePosition) then
+                    local xformScript = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.mapNumber.."/xform_"..currentMap.metadata.xformTileTable.script[i]..".script"
+                    dofile(xformScript)
+                    break
+                end
+            end
+        end
+    end
 
     --Check if tile is a damage-dealing tile (tile type 7)
 

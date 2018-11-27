@@ -1,4 +1,6 @@
 --Additions to map metadata
+mapDrawLayers = 3
+
 mapDrawOrder = 
 {
     "bottomLayer",
@@ -34,7 +36,7 @@ if (currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharac
             if (xformTileTable.x[i] == playerCharacter.gfx.xTilePosition) then
                 local xformScript = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.mapNumber.."/xform_"..xformTileTable.script[i]..".dat"
                 local xformAction = loadScript(xformScript)
-                --Need to call xfromAction - that goes here
+                --Need to call xformAction - that goes here
                 break
             end
         end

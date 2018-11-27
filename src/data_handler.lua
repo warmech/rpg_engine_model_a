@@ -38,11 +38,6 @@ function loadTable(path)
     return tableIn()
 end
 
-function loadScript(path)
-    local tableIn = loadfile(path)
-    return tableIn()
-end
-
 function openMapFile(fileName, mapWidth, mapHeight)
     --Open map data file
     local mapFile = io.open(fileName, "r")

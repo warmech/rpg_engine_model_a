@@ -1,0 +1,79 @@
+metadata = 
+{
+    mapName = "Cave of North",
+    mapNumber = "09",
+	mapX = 0,
+    mapY = 0,
+    aspectX = 16,
+    aspectY = 9,
+    widthBuffer = 2,
+    heightBuffer = 2,
+    zoomX = 3,
+    zoomY = 3,
+    mapWidth = 73,
+    mapHeight = 64,
+    tilesDisplayWidth = 18,
+    tilesDisplayHeight = 11,
+    mapBoundaryOffset = .5,
+    mapDrawLayers = 3,
+    mapDrawOrder = 
+    {
+        "bottomLayer",
+        "spriteLayer",
+        "topLayer"
+    },
+    elevationFlag = 
+    {
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+    },
+    xformTileTable = 
+    {
+        x       = {48,      48,     51,     51,     38,     38,     37,     38,     39,     37,     38,     39},
+        y       = {28,      29,     41,     42,     42,     43,     45,     45,     45,     46,     46,     46},
+        script  = {"01",    "02",   "03",   "04",   "05",   "06",   "07",   "07",   "07",   "08",   "08",   "08"}
+    },
+    doorMetadata = 
+    {
+        {
+            doorName = "Southern_Opening",
+            tileType = 1,
+            originMap = "09",
+            originX = 14,
+            originY = 42,
+            destMap = "01",
+            destX = 59,
+            destY = 50,
+            active = true,
+            transition = 1,
+            event = 0
+        },
+        {
+            doorName = "Northern_Opening",
+            tileType = 1,
+            originMap = "09",
+            originX = 50,
+            originY = 10,
+            destMap = "01",
+            destX = 62,
+            destY = 47,
+            active = true,
+            transition = 1,
+            event = 0
+        }
+    }
+}
+
+return metadata
+
+
+
+
