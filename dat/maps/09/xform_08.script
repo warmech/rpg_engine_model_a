@@ -14,7 +14,7 @@ local collisionRewriteTable =
 
 local elevationFlagIndex = 1
 
-print("Script 6")
+print("Script 8")
 
 --Lower elevation switch tile does the following to lock the player to the lower elevation
 if (currentMap.metadata.elevationFlag[elevationFlagIndex] == true) then

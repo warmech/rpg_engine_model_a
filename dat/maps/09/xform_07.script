@@ -1,0 +1,16 @@
+layerRewriteTable = 
+{
+    top_left = 
+    {
+        x = 29,
+        y = 38
+    },
+    bottom_right = 
+    {
+        x = 46,
+        y = 44
+    },
+    direction = "up"
+}
+
+return layerRewriteTable

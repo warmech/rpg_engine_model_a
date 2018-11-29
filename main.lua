@@ -13,6 +13,8 @@ print("CWD: "..cwd)
 function love.load()
     love.window.setMode(768, 432)
 
+    dofile("rpg_engine_model_a/dat/init/control.init")
+
     mapNumber = "09"
     --mapNumber = "01"
     tileSize = 16

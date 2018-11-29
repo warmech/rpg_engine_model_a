@@ -1,0 +1,5 @@
+executionControl = 
+{
+	controlLockout = false
+	roomReveal = false
+}

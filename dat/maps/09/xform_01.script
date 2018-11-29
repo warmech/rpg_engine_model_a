@@ -16,6 +16,8 @@ local function ascendMapLevel()
 
     local elevationFlagIndex = 1
 
+    print("Script 1")
+
     --Upper elevation switch tile does the following to lock the player to the upper elevation
     if (currentMap.metadata.elevationFlag[elevationFlagIndex] == false) then
         --Set elevationFlag to true

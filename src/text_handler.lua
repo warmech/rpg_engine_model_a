@@ -1,3 +1,8 @@
+function openTextBox( ... )
+    -- body
+end
+
+
 function selectFont(fontName)
 	--love.graphics.setDefaultFilter("nearest","nearest")
 

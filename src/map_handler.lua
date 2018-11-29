@@ -1,4 +1,4 @@
-function buildMap(mapNumber, startX, startY)
+ function buildMap(mapNumber, startX, startY)
 
     local function buildTileset(fileName)
         --Create quad table and import the appropriate tileset file
@@ -126,10 +126,8 @@ function preCollisionAction()
 end
 
 
-
 function postCollisionAction()
     --Check if tile is a door/teleporter (tile type 2)
-
     print("Tile: "..currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition])
     print("X: "..playerCharacter.gfx.xTilePosition)
     print("Y: "..playerCharacter.gfx.yTilePosition)
@@ -163,11 +161,22 @@ function postCollisionAction()
 
     --Check if tile is searchable by the player (tile type 3)
 
-    --Check if tile is an elevation switch (tile type 4)
+    --Check if tile is a room transformation tile (tile type 4)
 
     --Check if the tile is an event tile (tile type 5)
+    if (currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition] == 5) then
+        for i = 1, (#currentMap.metadata.eventTable.script) do
+            if (currentMap.metadata.eventTable.y[i] == playerCharacter.gfx.yTilePosition) then
+                if (currentMap.metadata.eventTable.x[i] == playerCharacter.gfx.xTilePosition) then
+                    local eventScript = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.mapNumber.."/event_"..currentMap.metadata.eventTable.script[i]..".script"
+                    dofile(eventScript)
+                    break
+                end
+            end
+        end
+    end
 
-    --Check if tile is a room transformation tile (tile type 6)
+    --Check if tile is an elevation switch (tile type 6)
     if (currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition] == 6) then
         for i = 1, (#currentMap.metadata.xformTileTable.script) do
             if (currentMap.metadata.xformTileTable.y[i] == playerCharacter.gfx.yTilePosition) then
