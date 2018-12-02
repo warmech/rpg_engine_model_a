@@ -3,6 +3,7 @@ require "/src/map_handler"
 require "/src/player_obj"
 require "/src/character_gfx"
 require "/src/input_handler"
+require "/src/text_handler"
 
 --[[
 cwd = love.filesystem.getWorkingDirectory()
@@ -15,16 +16,13 @@ function love.load()
 
     dofile("rpg_engine_model_a/dat/init/control.init")
 
-    mapNumber = "09"
-    --mapNumber = "01"
+    mapNumber = "01"
     tileSize = 16
     playerName = "Will"
     playerType = "human_m"
 
-    startX = 42.5
-    startY = 27
-    --startX = 53.5
-    --startY = 54
+    startX = 53.5
+    startY = 54
 
     currentMap = buildMap(mapNumber, startX, startY)
 
@@ -32,6 +30,7 @@ function love.load()
 
     playerCharacter.gfx.xTilePosition = currentMap.metadata.mapX + playerCharacter.gfx.distToCenterX
     playerCharacter.gfx.yTilePosition = currentMap.metadata.mapY + playerCharacter.gfx.distToCenterY
+    --textbox = buildTextbox(144, 240, 18, 8)
 end
 
 function love.keypressed(key)
@@ -80,5 +79,25 @@ function love.draw()
                 (currentMap.metadata.zoomY)
             )
         end
-    end   
+    end
+    --[[
+    love.graphics.draw(
+        textbox.boxLayer,
+        textbox.startX,
+        textbox.startY,
+        0, 
+        (currentMap.metadata.zoomX), 
+        (currentMap.metadata.zoomY)
+    )]]  
 end
+
+
+
+
+
+
+
+
+
+
+

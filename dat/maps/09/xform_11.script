@@ -14,43 +14,31 @@ local function rewriteLayer()
                 y = 45
             }
         },
-        --Area below south entryway
+        --Area above middle corridor
         {
             top_left = 
             {
-                x = 28,
-                y = 46
+                x = 42,
+                y = 27
             },
             bottom_right = 
             {
-                x = 48,
-                y = 54
+                x = 55,
+                y = 35
             }
         }
     }
 
-    local mapY = 1
-    local mapX = 1
-
     for y = layerRewriteTable[1].top_left.y, layerRewriteTable[1].bottom_right.y do
         for x = layerRewriteTable[1].top_left.x, layerRewriteTable[1].bottom_right.x do
-            currentMap.tilemap.top[y][x] = currentMap.metadata.xform.south.top[mapY][mapX]
-            if (mapX < (layerRewriteTable[1].bottom_right.x - layerRewriteTable[1].top_left.x)) then
-                mapX = mapX + 1
-            else
-                mapX = 1
-            end
-        end
-        if (mapY < (layerRewriteTable[1].bottom_right.y - layerRewriteTable[1].top_left.y)) then
-            mapY = mapY + 1
-        else
-            mapY = 1
+            currentMap.tilemap.top[y][x] = 6
         end
     end
 
+
     for y = layerRewriteTable[2].top_left.y, layerRewriteTable[2].bottom_right.y do
         for x = layerRewriteTable[2].top_left.x, layerRewriteTable[2].bottom_right.x do
-            currentMap.tilemap.top[y][x] = 6
+            currentMap.tilemap.top[y][x] = 21
         end
     end
 

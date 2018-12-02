@@ -1,0 +1,112 @@
+local function rewriteLayer()
+    local layerRewriteTable = 
+    {
+        --Room above south entryway and below middle corridor
+        {
+            top_left = 
+            {
+                x = 34,
+                y = 36
+            },
+            bottom_right = 
+            {
+                x = 54,
+                y = 45
+            }
+        },
+        --Area above middle corridor
+        {
+            top_left = 
+            {
+                x = 42,
+                y = 27
+            },
+            bottom_right = 
+            {
+                x = 55,
+                y = 35
+            }
+        },
+        --Area below south entryway
+        {
+            top_left = 
+            {
+                x = 28,
+                y = 46
+            },
+            bottom_right = 
+            {
+                x = 48,
+                y = 54
+            }
+        }
+    }
+
+    local mapY = layerRewriteTable[1].top_left.y
+    local mapX = layerRewriteTable[1].top_left.x
+
+    local topLayerDefault = {}
+
+    for y = 1, (layerRewriteTable[1].bottom_right.y - layerRewriteTable[1].top_left.y) do
+        topLayerDefault[y] = {}
+        for x = 1, (layerRewriteTable[1].bottom_right.x - layerRewriteTable[1].top_left.x) do
+            topLayerDefault[y][x] = currentMap.tilemap.top[mapY][mapX]
+            if (mapX < layerRewriteTable[1].bottom_right.x) then
+                mapX = mapX + 1
+            else
+                mapX = layerRewriteTable[1].top_left.x
+            end
+        end
+        if (mapY < layerRewriteTable[1].bottom_right.y) then
+            mapY= mapY + 1
+        else
+            mapY = layerRewriteTable[1].top_left.y
+        end
+    end
+
+    currentMap.metadata.xform = {}
+    currentMap.metadata.xform.south = {}
+    currentMap.metadata.xform.south.top = topLayerDefault
+
+    mapY = layerRewriteTable[3].top_left.y
+    mapX = layerRewriteTable[3].top_left.x
+
+    topLayerDefault = {}
+
+    for y = 1, (layerRewriteTable[3].bottom_right.y - layerRewriteTable[3].top_left.y) do
+        topLayerDefault[y] = {}
+        for x = 1, (layerRewriteTable[3].bottom_right.x - layerRewriteTable[3].top_left.x) do
+            topLayerDefault[y][x] = currentMap.tilemap.top[mapY][mapX]
+            if (mapX < layerRewriteTable[3].bottom_right.x) then
+                mapX = mapX + 1
+            else
+                mapX = layerRewriteTable[3].top_left.x
+            end
+        end
+        if (mapY < layerRewriteTable[3].bottom_right.y) then
+            mapY= mapY + 1
+        else
+            mapY = layerRewriteTable[3].top_left.y
+        end
+    end
+
+    currentMap.metadata.xform.south.bottom = topLayerDefault
+
+    for area = 1, 3 do
+        for y = layerRewriteTable[area].top_left.y, layerRewriteTable[area].bottom_right.y do
+            for x = layerRewriteTable[area].top_left.x, layerRewriteTable[area].bottom_right.x do
+                currentMap.tilemap.top[y][x] = 6
+            end
+        end
+    end
+
+    for y = layerRewriteTable[2].top_left.y, layerRewriteTable[2].bottom_right.y do
+        for x = layerRewriteTable[2].top_left.x, layerRewriteTable[2].bottom_right.x do
+            currentMap.tilemap.top[y][x] = 21
+        end
+    end
+    
+    updateTilesetSpriteBatch()
+end
+
+return rewriteLayer()

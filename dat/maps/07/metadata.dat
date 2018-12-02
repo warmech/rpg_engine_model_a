@@ -14,6 +14,13 @@ metadata =
     tilesDisplayWidth = 18,
     tilesDisplayHeight = 11,
     mapBoundaryOffset = .5,
+    mapDrawLayers = 3,
+    mapDrawOrder = 
+    {
+        "bottomLayer",
+        "spriteLayer",
+        "topLayer"
+    },
     doorMetadata = 
     {
         {

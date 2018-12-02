@@ -1,47 +1,60 @@
-local collisionRewriteTable = 
-{
-    upper = 
+local function rewriteLayer()
+    local layerRewriteTable = 
     {
-        x = {37,38,39,40,41,37,41,37,41,43,44,45,46,47,48,43,48,43,48},
-        y = {40,40,40,40,40,41,41,42,42,42,42,42,42,42,42,43,43,44,44}
-    },
-    lower = 
-    {
-        x = {37,38,39,40,41,36,42,36,42,43,44,45,46,47,48,36,49,42,49,42,49},
-        y = {39,39,39,39,39,40,40,41,41,41,41,41,41,41,41,42,42,43,43,44,44}
-    }
-}
-
-local elevationFlagIndex = 1
-
-print("Script 8")
-
---Lower elevation switch tile does the following to lock the player to the lower elevation
-if (currentMap.metadata.elevationFlag[elevationFlagIndex] == true) then
-    --Set elevationFlag to true
-    currentMap.metadata.elevationFlag[elevationFlagIndex] = false
-    --Iterate through list of x/y coordinates in upper rewrite table
-    for i = 1, (#collisionRewriteTable.lower.x) do
-        --At each upper coordinate, change the corresponding collision value at said x/y index to (0)
-        currentMap.tilemap.collision[collisionRewriteTable.lower.y[i]][collisionRewriteTable.lower.x[i]] = 0
-    end
-    --Iterate through list of x/y coordinates in lower rewrite table
-    for i = 1, (#collisionRewriteTable.upper.x) do
-        --At each lower coordinate, change the corresponding collision value at said x/y index to (1)
-        currentMap.tilemap.collision[collisionRewriteTable.upper.y[i]][collisionRewriteTable.upper.x[i]] = 1
-    end
-
-    --Change draw order to draw the player above the top layer (to be drawn underneath bridges)
-    currentMap.metadata.mapDrawOrder = 
-    {
-        "bottomLayer",
-        "spriteLayer",
-        "topLayer"        
+        --Room above south entryway and below middle corridor
+        {
+            top_left = 
+            {
+                x = 34,
+                y = 36
+            },
+            bottom_right = 
+            {
+                x = 54,
+                y = 45
+            }
+        },
+        --Area below south entryway
+        {
+            top_left = 
+            {
+                x = 28,
+                y = 46
+            },
+            bottom_right = 
+            {
+                x = 48,
+                y = 54
+            }
+        }
     }
 
-    --Update collision info for adjacent tiles in the playerCharacter object's gfx table so that the correct collision can occur on the next keypress
-    playerCharacter.gfx.upTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition - 1][playerCharacter.gfx.xTilePosition]
-    playerCharacter.gfx.rightTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition + 1]
-    playerCharacter.gfx.downTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition + 1][playerCharacter.gfx.xTilePosition]
-    playerCharacter.gfx.leftTile = currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition - 1]
+    for y = layerRewriteTable[1].top_left.y, layerRewriteTable[1].bottom_right.y do
+        for x = layerRewriteTable[1].top_left.x, layerRewriteTable[1].bottom_right.x do
+            currentMap.tilemap.top[y][x] = 6
+        end
+    end
+
+    local mapY = 1
+    local mapX = 1
+
+    for y = layerRewriteTable[2].top_left.y, layerRewriteTable[2].bottom_right.y do
+        for x = layerRewriteTable[2].top_left.x, layerRewriteTable[2].bottom_right.x do
+            currentMap.tilemap.top[y][x] = currentMap.metadata.xform.south.bottom[mapY][mapX]
+            if (mapX < (layerRewriteTable[2].bottom_right.x - layerRewriteTable[2].top_left.x)) then
+                mapX = mapX + 1
+            else
+                mapX = 1
+            end
+        end
+        if (mapY < (layerRewriteTable[2].bottom_right.y - layerRewriteTable[2].top_left.y)) then
+            mapY = mapY + 1
+        else
+            mapY = 1
+        end
+    end
+
+    updateTilesetSpriteBatch()
 end
+
+return rewriteLayer()

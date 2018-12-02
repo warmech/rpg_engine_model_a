@@ -1,8 +1,3 @@
-function openTextBox( ... )
-    -- body
-end
-
-
 function selectFont()
 	love.graphics.setDefaultFilter("nearest","nearest")
 	local fontPath = "/gfx/font/text_std_vwf_main.png"
@@ -12,7 +7,7 @@ end
 
 function buildTextbox(startX, startY, width, height)
 
-    local function buildTileset(fileName, tileSize)
+    local function buildTileset(fileName, _tileSize)
         --Create quad table and import the appropriate tileset file
         local tileset = {}
         local tilesetFile = love.graphics.newImage(fileName)
@@ -22,18 +17,18 @@ function buildTextbox(startX, startY, width, height)
         tilesetFile:setFilter(filter_min, filter_mag)
         local tilesetQuadIndex = 1
         --Iterate down the tileset's rows by multiples of tileSize pixels (16 is default)
-        for y = 1, (tilesetFile:getHeight() / tileSize) do
+        for y = 1, (tilesetFile:getHeight() / _tileSize) do
             --Iterate across the tileset's columns by multiples of tileSize pixels (16 is default)
-            for x = 1, (tilesetFile:getWidth() / tileSize) do
+            for x = 1, (tilesetFile:getWidth() / _tileSize) do
                 --Read the (tileSize * tileSize) pixel group at ((x - 1) * tileSize), ((y - 1) * tileSize) into a new quad
-                tileset[tilesetQuadIndex] = love.graphics.newQuad(((x - 1) * tileSize), ((y - 1) * tileSize), tileSize, tileSize, tilesetFile:getWidth(), tilesetFile:getHeight())
+                tileset[tilesetQuadIndex] = love.graphics.newQuad(((x - 1) * _tileSize), ((y - 1) * _tileSize), _tileSize, _tileSize, tilesetFile:getWidth(), tilesetFile:getHeight())
                 tilesetQuadIndex = tilesetQuadIndex + 1
             end
         end
         return tileset, tilesetFile
     end
 
-    local function buildSpriteBatch(tileset, tilesetFile, textboxTable)
+    local function buildSpriteBatch(tileset, tilesetFile, textboxTable, _tileSize)
         --Create a new sprite batch the size fo the textbox with the tileset file
         local tilesetSpriteBatch = love.graphics.newSpriteBatch(tilesetFile, width * height)
         --Clear out the textbox canvas
@@ -43,7 +38,7 @@ function buildTextbox(startX, startY, width, height)
             --Iterate across the columns of the textbox
             for x = 0, (width - 1) do
                 --Write the appropriate tile to the current cell in the sprite batch
-                tilesetSpriteBatch:add(tileset[(textboxTable[y + 1][x + 1])], x * tileSize, y * tileSize)
+                tilesetSpriteBatch:add(tileset[(textboxTable[y + 1][x + 1])], x * _tileSize, y * _tileSize)
             end
         end
         --Send data to GPU
@@ -92,18 +87,58 @@ function buildTextbox(startX, startY, width, height)
     end
 
     --Declare file name for tileset image and declare the tile size
-    local tilesetFileName = "text_box.png"
-    local tileSize = 8
+    local tilesetFileName = "gfx/font/text_box.png"
+    local _tileSize = 8
 
     --Build tileset, sprite batch, and textbox object
-    local tileset, tilesetFile = buildTileset(tilesetFileName, tileSize)
+    local tileset, tilesetFile = buildTileset(tilesetFileName, _tileSize)
     local textboxTable = buildTextboxTable(width, height)
-    local boxLayer = buildSpriteBatch(tileset, tilesetFile, textboxTable)
+    local boxLayer = buildSpriteBatch(tileset, tilesetFile, textboxTable, _tileSize)
     local textbox = {tileset = tileset, boxLayer = boxLayer, startX = startX, startY = startY}
 
     return textbox
 end
 
-function displayText( ... )
-    -- body
+function advanceText(dt)
+    text.metadata.timer = text.metadata.timer + dt
+    while text.metadata.timer > text.metadata.speed do
+        text.metadata.iterator = text.metadata.iterator + 1
+        text.metadata.timer = text.metadata.timer - text.metadata.speed
+    end
 end
+
+function drawText()
+    love.graphics.scale(3)
+    local textSegment = sampleText:sub(1, text.metadata.iterator)
+    love.graphics.print(c, 10, 10)
+end
+
+
+
+text = 
+{
+    box = 
+    {
+        string = ""
+
+
+    },
+    metadata = 
+    {
+        timer = 0,
+        iterator = 0
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

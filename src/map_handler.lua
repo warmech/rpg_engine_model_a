@@ -127,6 +127,10 @@ end
 
 
 function postCollisionAction()
+    --Do nothing if the tile is normal (tile type 0)
+
+    --Do nothing if the tile is impassable (tile type 1) - this is handled by preCollisionMovementCheck()
+
     --Check if tile is a door/teleporter (tile type 2)
     print("Tile: "..currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition])
     print("X: "..playerCharacter.gfx.xTilePosition)
@@ -162,13 +166,24 @@ function postCollisionAction()
     --Check if tile is searchable by the player (tile type 3)
 
     --Check if tile is a room transformation tile (tile type 4)
+    if (currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition] == 4) then
+        for i = 1, (#currentMap.metadata.specialTileTable.script) do
+            if (currentMap.metadata.specialTileTable.y[i] == playerCharacter.gfx.yTilePosition) then
+                if (currentMap.metadata.specialTileTable.x[i] == playerCharacter.gfx.xTilePosition) then
+                    local xformScript = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.mapNumber.."/xform_"..currentMap.metadata.specialTileTable.script[i]..".script"
+                    dofile(xformScript)
+                    break
+                end
+            end
+        end
+    end
 
     --Check if the tile is an event tile (tile type 5)
     if (currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition] == 5) then
-        for i = 1, (#currentMap.metadata.eventTable.script) do
-            if (currentMap.metadata.eventTable.y[i] == playerCharacter.gfx.yTilePosition) then
-                if (currentMap.metadata.eventTable.x[i] == playerCharacter.gfx.xTilePosition) then
-                    local eventScript = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.mapNumber.."/event_"..currentMap.metadata.eventTable.script[i]..".script"
+        for i = 1, (#currentMap.metadata.specialTileTable.script) do
+            if (currentMap.metadata.specialTileTable.y[i] == playerCharacter.gfx.yTilePosition) then
+                if (currentMap.metadata.specialTileTable.x[i] == playerCharacter.gfx.xTilePosition) then
+                    local eventScript = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.mapNumber.."/event_"..currentMap.metadata.specialTileTable.script[i]..".script"
                     dofile(eventScript)
                     break
                 end
@@ -178,11 +193,11 @@ function postCollisionAction()
 
     --Check if tile is an elevation switch (tile type 6)
     if (currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition] == 6) then
-        for i = 1, (#currentMap.metadata.xformTileTable.script) do
-            if (currentMap.metadata.xformTileTable.y[i] == playerCharacter.gfx.yTilePosition) then
-                if (currentMap.metadata.xformTileTable.x[i] == playerCharacter.gfx.xTilePosition) then
-                    local xformScript = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.mapNumber.."/xform_"..currentMap.metadata.xformTileTable.script[i]..".script"
-                    dofile(xformScript)
+        for i = 1, (#currentMap.metadata.specialTileTable.script) do
+            if (currentMap.metadata.specialTileTable.y[i] == playerCharacter.gfx.yTilePosition) then
+                if (currentMap.metadata.specialTileTable.x[i] == playerCharacter.gfx.xTilePosition) then
+                    local elevateScript = "rpg_engine_model_a/dat/maps/"..currentMap.metadata.mapNumber.."/elevation_"..currentMap.metadata.specialTileTable.script[i]..".script"
+                    dofile(elevateScript)
                     break
                 end
             end
@@ -190,6 +205,10 @@ function postCollisionAction()
     end
 
     --Check if tile is a damage-dealing tile (tile type 7)
+
+    --Check if tile one-way travel tile (tile type 8)
+
+    --Check if tile partial obfuscation tile (tile type 9)
 
 end
 

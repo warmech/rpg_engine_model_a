@@ -14,17 +14,17 @@ local function rewriteLayer()
                 y = 45
             }
         },
-        --Area below south entryway
+        --Area above middle corridor
         {
             top_left = 
             {
-                x = 28,
-                y = 46
+                x = 42,
+                y = 27
             },
             bottom_right = 
             {
-                x = 48,
-                y = 54
+                x = 55,
+                y = 35
             }
         }
     }

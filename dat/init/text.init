@@ -1,0 +1,13 @@
+text = 
+{
+    box = 
+    {
+
+    },
+    metadata = 
+    {
+        timer = 0,
+        iterator = 0,
+        speed = 0.0625
+    }
+}
