@@ -1,0 +1,27 @@
+metadata = 
+{
+    mapName = "Test Area",
+    mapNumber = "10",
+	mapX = 0,
+    mapY = 0,
+    aspectX = 16,
+    aspectY = 9,
+    widthBuffer = 2,
+    heightBuffer = 2,
+    zoomX = 3,
+    zoomY = 3,
+    mapWidth = 50,
+    mapHeight = 50,
+    tilesDisplayWidth = 18,
+    tilesDisplayHeight = 11,
+    mapBoundaryOffset = .5,
+    mapDrawLayers = 3,
+    mapDrawOrder = 
+    {
+        "bottomLayer",
+        "spriteLayer",
+        "topLayer"
+    }
+}
+
+return metadata
