@@ -1,0 +1,3289 @@
+FFL2 Combat Programs
+
+
+// addresses to 11 combat programs
+// found at 30680
+96 46
+73 47
+18 48
+E5 49
+CF 4A
+32 52
+98 4B
+43 4C
+08 4D
+5A 4E
+6B 4F
+
+
+
+// PROGRAM ZERO
+// determine surprise turn
+ROMC:4696 LET @CF00.b = 0x00			// current counter (for PC)
+ROMC:469B LET @CF01.b = 0x04			// max counter (of PC)
+ROMC:46A0 GOSUB 472F						// check if anyone has surprise and/or warning
+ROMC:46A3 LET @CF40.b = @D800.b AND 0x80	// surprise
+ROMC:46AB LET @CF41.b = @D800.b AND 0x40	// warning
+ROMC:46B3 LET @CF00.b = 0x05			// first enemy group
+ROMC:46B8 LET @CF01.b = 0x07			// last enemy group
+ROMC:46BD GOSUB 472F						// check if enemy has surprise and/or warning
+ROMC:46C0 LET @CF42.b = @D800.b AND 0x80	// surprise
+ROMC:46C8 LET @CF43.b = @D800.b AND 0x40	// warning
+ROMC:46D0 IF RANDOM(0x64) > 0x32		// 50% chance of player surprise fails
+ROMC:46D5 GOTO 46DD						// surprise fails if random = 33 to 64
+ROMC:46D8 IF @CF43.b = 0x40				// if enemy has warning
+ROMC:46DD LET @CF40.b = 0x00			// player surprise failed
+ROMC:46E2 IF RANDOM(0x64) > 0x14		// 80% chance of enemy surprise fails
+ROMC:46E7 GOTO 46EF						// surprise fails if random = 21 to 100
+ROMC:46EA IF @CF41.b = 0x40				// if player has warning
+ROMC:46EF LET @CF42.b = 0x00			// enemy surprise failed
+ROMC:46F4 LET @D800.b = 0x00			// reset var
+ROMC:46FA IF @CF40.b > @CF42.b			// player surprise > enemy surprise
+ROMC:46FF GOTO 470B						// player surprise success
+ROMC:4702 IF @CF42.b > @CF40.b			// enemy surprise > player surprise
+ROMC:4707 GOTO 471D						// enemy surprise success
+ROMC:470A END								// end program zero
+
+// player surprise success
+ROMC:470B LET @D800.b = 0x01
+ROMC:4711 LET @D90C.b = 0x00		// set message : ^Strike first!
+ROMC:4717 SYS 0020						// print message
+ROMC:471A GOTO 470A
+
+// enemy surprise success
+ROMC:471D LET @D800.b = 0x02
+ROMC:4723 LET @D90C.b = 0x01		// set message : ^Unexpected attack!
+ROMC:4729 SYS 0020						// print message
+ROMC:472C GOTO 470A
+
+// check if anyone on one side has surprise and/or warning
+ROMC:472F LET @D800.b = 0x00
+ROMC:4735 GOSUB 6EC7				// initialize CF04.b = 0
+ROMC:4738 GOSUB 6755				// check current number of lives
+ROMC:473B IF @CF1A.b = 0x00
+ROMC:4740 GOTO 4768				// no lives left, go next active player
+// loop through item array
+ROMC:4743 GOSUB 6771				// get current item ID => @CF13.w
+ROMC:4746 LET @CF34.w = @CF13.w * 0x08 + 0x6F81	// get pointer to 2nd byte of item data in ROM
+ROMC:4750 LET @CF21.b = @(CF34).b						// get 2nd byte: flags
+ROMC:4755 LET @D800.b = @D800.b OR @CF21.b		// holds flags => D800
+ROMC:475E INC @CF04.b			// increment counter in item array
+// loop condition
+ROMC:4760 IF @CF04.b <= 0x07	// counter less than max item array size
+ROMC:4765 GOTO 4743				// continue loop with next item
+
+// go next active player
+ROMC:4768 INC @CF00.b					// increment active player
+ROMC:476A IF @CF00.b <= @CF01.b		// active player <= max players
+ROMC:476F GOTO 4735						// continue with next active player
+ROMC:4772 RETURN
+
+
+// PROGRAM ONE
+// player attempting to run from battle
+ROMC:4773 LET @D801.b = 0x01				// ?? initialize boolean, 0x01 means player can't run
+ROMC:4779 IF 0x20 = @D844.b AND 0x20		// check encounter flags
+ROMC:4781 GOTO 47C0							// boss fight, can't run
+ROMC:4784 IF 0x01 = @D800.b					// player's free surprise turn
+ROMC:478A GOTO 47D6
+ROMC:478D LET @CF00.b = 0x00				// initialize active player
+ROMC:4792 LET @CF01.b = 0x04				// max players
+ROMC:4797 GOSUB 47DF							// calculate party's total AGL => @CF49
+ROMC:479A LET @CF45.w = @CF49.w			// store party's total AGL
+ROMC:479F LET @CF00.b = 0x05				// initialize active enemy group
+ROMC:47A4 LET @CF01.b = 0x07				// max enemy group
+ROMC:47A9 GOSUB 47DF						// calculate enemy's total AGL => @CF49
+ROMC:47AC LET @CF47.w = @CF49.w			// store enemy's total AGL
+ROMC:47B1 LET @CF47.w = @CF47.w + RANDOM(0x32)	// add random to enemy's total
+ROMC:47B8 IF @CF45.w > @CF47.w				// if player total > enemy total
+ROMC:47BD GOTO 47D6							// player run success
+// can't run
+ROMC:47C0 LET @D801.b = 0x00			// what is this for?
+ROMC:47C6 LET @D800.b = 0x02			// enemy free turn
+ROMC:47CC LET @D90C.b = 0x02			// set message : ^Can't Run!
+ROMC:47D2 SYS 0020						// print message
+ROMC:47D5 END								// end program one
+// player run success
+ROMC:47D6 LET @D90C.b = 0x03			// set message : ^Run!!
+ROMC:47DC GOTO 47D2						// print message and quit
+
+// calculate total AGL for one side
+ROMC:47DF LET @CF49.w = 0x00			// initialize party's total AGL
+// loop through players
+ROMC:47E4 GOSUB 6755						// check number of lives
+ROMC:47E7 IF @CF1A.b = 0x00				// no lives left
+ROMC:47EC GOTO 4801						// player dead
+ROMC:47EF GOSUB 6E72						// initialize CF31.b, get active player's block
+ROMC:47F2 LET @CF30.b = 0x0F			// 0F Dn = AGL
+ROMC:47F7 LET @CF49.w = @CF49.w + @(CF30).b		// multiple of 0x64
+ROMC:47FE GOTO 480D
+// player is dead
+ROMC:4801 IF @CF00.b <= 0x04			// if active player is PC
+ROMC:4806 LET @CF49.w = @CF49.w + 0x64	// add 100 to party's total AGL
+// loop condition
+ROMC:480D INC @CF00.b					// go to next active player
+ROMC:480F IF @CF00.b <= @CF01.b		// if not max players
+ROMC:4814 GOTO 47E4						// continue loop
+ROMC:4817 RETURN
+
+
+// PROGRAM TWO
+// Determine enemies' actions
+ROMC:4818 LET @CF00.b = 0x05			// initialize active enemy group
+// loop start
+ROMC:481D LET @CF02.b = 0x00			// initialize active enemy individual
+ROMC:4822 GOSUB 6755						// check number of lives
+ROMC:4825 IF @CF1A.b = 0x00				// if no lives left
+ROMC:482A GOTO 4984						// go to next active enemy group
+ROMC:482D GOSUB 6788						// store max lives => @CF03.b
+ROMC:4830 GOSUB 6796						// store species => @CF18.b
+ROMC:4833 IF @CF1B.b = 0xFE				// if enemy is Apollo
+ROMC:4838 GOTO 499F						// go to his scripted fight
+ROMC:483B LET @CF53.w = @CF1B.b + 0x7D50	// initialize pointer to DS level in ROM
+// loop through enemy individual
+ROMC:4843 GOSUB 67D4								// get individual status => @CF06.b						// get status? @CF06.b => @(CF32).b, 0xD0E0 eg
+ROMC:4846 IF 0x00 < @CF06.b AND 0x98 // @CF06.b and 10011000 > 0: stone, stun, confuse
+ROMC:484D LET @CF13.w = 0xFF			// initialize attack = No Move
+ROMC:4852 IF 0x02 = @CF06.b AND 0x02	// @CF06.b and 00000010 = 2: paralyze
+ROMC:4859 LET @CF13.w = 0x010E			// initialize attack = blank 1
+ROMC:485F IF 0x01 = @CF06.b AND 0x01	// @CF06.b and 00000001 = 1: sleep
+ROMC:4866 LET @CF13.w = 0x010F			// initialize attack = blank 2
+ROMC:486C IF 0x00 = @CF06.b AND 0x9B	// @CF06.b and 10011011 = 0: not stoned, stunned, confused, paralyzed, or sleeping
+ROMC:4873 GOTO 487C						// ok to choose attack
+ROMC:4876 GOSUB 6804						// not ok to attack, so set next attack to @CF13.w
+ROMC:4879 GOTO 497A						// go to next active enemy individual
+// ok to choose attack
+ROMC:487C LET @CF52.b = RANDOM(0xFF)	// initialize move selection chance = random(255)
+ROMC:4881 GOSUB 6EC7						// initialize item counter CF04.b => 0x00
+ROMC:4884 LET @CF30.w = @CF00.b + 0xD844	// initialize pointer to enemy max items
+ROMC:488C LET @CF05.b = @(CF30).b	// store max items
+// loop through item array
+ROMC:4891 LET @CF62.w = @(CF53).b >> 0x04 * 0x08 + 0x6F00 + @CF04.b
+// highNybbleOfDS * 8 + 6F00 + item = pointer to move selection (MS) probability @32F00
+ROMC:489F IF @CF52.b < @(CF62).b	// roll < probability = good
+ROMC:48A4 GOTO 48B4						// item selected
+// loop through item array
+ROMC:48A7 INC @CF04.b					// get next item
+ROMC:48A9 IF @CF04.b <= @CF05.b	// if current item < max items
+ROMC:48AE GOTO 4891						// continue loop
+ROMC:48B1 GOSUB 6EC7						// initialize item counter CF04.b => 0x00
+// item selected
+ROMC:48B4 GOSUB 6771						// get current item ID => @CF13.w
+// ready to find targets
+ROMC:48B7 GOSUB 67A4						// get item targeting flags @CF20.b
+ROMC:48BA IF 0x00 = @CF20.b AND 0x01	// item not usable in battle
+ROMC:48C1 GOTO 48A7						// no good, continue loop with next item
+ROMC:48C4 GOSUB 6804						// set next attack to last good item ID @(CF32).w => @CF13.w
+ROMC:48C7 LET @CF32.w = @CF32.w + 0x03	// pointer to 3 bytes after item ID
+ROMC:48CE LET @(CF32).b = @CF04.b			// save item counter
+ROMC:48D3 IF 0x20 = @CF20.b AND 0x20		// item affects opponents
+ROMC:48DA GOTO 4908							// choose targets
+ROMC:48DD IF 0x10 = @CF20.b AND 0x10		// item affects self or all allies
+ROMC:48E4 GOTO 498F							// no targeting necessary
+// item affects one ally group
+ROMC:48E7 LET @CF15.b = RANDOM(0x02) + 0x05	// next attack targeting enemy group 5-7
+// loop to choose valid target group
+ROMC:48EE INC @CF15.b						// increment flag
+ROMC:48F0 IF @CF15.b > 0x07				// redundant?
+ROMC:48F5 LET @CF15.b = 0x05				// mod 5
+ROMC:48FA GOSUB 6763							// get target's number of lives @CF14.b
+ROMC:48FD IF @CF1A.b = 0x00				// no lives left
+ROMC:4902 GOTO 48EE							// loop to next target group
+ROMC:4905 GOTO 4973							// target ok
+// item affects opponents, choose targets for next attack
+ROMC:4908 IF 0x10 = @CF20.b AND 0x10		// affects all opponents
+ROMC:490F GOTO 4997							// set item target @CF15.b = 0x09
+ROMC:4912 IF 0x00 = @CF20.b AND 0x80		// 0 = each player has equal chance
+ROMC:4919 GOTO 4956							// choose random non-dead player
+// players in front have higher chance of getting targeted
+ROMC:491C LET @CF50.b = 0x00				// temp player counter
+// loop through with temp player counter
+ROMC:4921 LET @CF30.w = @CF50.b * 0x0100 + 0xD001	// get pointer to player's lives
+ROMC:492C LET @CF1A.b = @(CF30).b			// store player's lives
+ROMC:4931 IF @CF1A.b = 0x00					// no more lives
+ROMC:4936 GOTO 4949							// go next temp player
+ROMC:4939 IF RANDOM(0x64) > 0x32			// 50% chance 51-100 of skipping player
+ROMC:493E GOTO 4949							// go next temp player
+ROMC:4941 LET @CF15.b = @CF50.b			// target is temp player
+ROMC:4946 GOTO 4973							// target ok
+ROMC:4949 INC @CF50.b						// increment temp player counter
+ROMC:494B IF @CF50.b > 0x04
+ROMC:4950 GOTO 4956							// choose random non-dead player
+ROMC:4953 GOTO 4921							// continue loop with next temp player
+// each player has equal chance of being targeted
+ROMC:4956 LET @CF15.b = RANDOM(0x04)	// random player as target
+// loop through players
+ROMC:495B IF @CF15.b > 0x04					// out of range
+ROMC:4960 GOSUB 6EDC						// initialize target to first player => @CF15.b
+ROMC:4963 GOSUB 6763							// get target's number of lives @CF14.b
+ROMC:4966 IF @CF1A.b > 0x00					// player still alive
+ROMC:496B GOTO 4973							// target ok
+ROMC:496E INC @CF15.b						// get next player
+ROMC:4970 GOTO 495B							// continue loop to next player
+// return here from targeting subroutines
+ROMC:4973 DEC @CF32.w					// pointer to item targeting
+ROMC:4975 LET @(CF32).b = @CF15.b		// store item targeting flags
+// go to next active enemy individual
+ROMC:497A INC @CF02.b					// go to next active enemy individual
+ROMC:497C IF @CF02.b < @CF03.b			// under max individuals
+ROMC:4981 GOTO 4843						// continue loop with next individual
+// go to next active enemy group
+ROMC:4984 INC @CF00.b					// go to next active enemy group
+ROMC:4986 IF @CF00.b <= 0x07			// if less than max enemy group
+ROMC:498B GOTO 481D						// continue loop with next enemy group
+ROMC:498E END								// end program two
+// item doesn't target, self or all allies
+ROMC:498F LET @CF15.b = 0x08			// item targeting flag
+ROMC:4994 GOTO 4973						// return and store flag
+// item affects all opponents
+ROMC:4997 LET @CF15.b = 0x09			// item targeting flag
+ROMC:499C GOTO 4973						// return and store flag
+
+// Apollo fight
+ROMC:499F IF @CFC0.b = 0x01				// Apollo's final attack
+ROMC:49A4 GOTO 49DD						// initialize next move to final Flare @CF13.w = 0xFC
+// else Apollo is waiting
+ROMC:49A7 LET @CF54.b = @D848.b		// turns before he transforms?
+ROMC:49AD IF @CF54.b > 0x05				// past turn 5
+ROMC:49B2 GOTO 49BD						// Apollo starts attacking
+// turns 1-5
+ROMC:49B5 LET @CF13.w = 0xF7			// set next attack to Aegis
+ROMC:49BA GOTO 49CF						// find targets and continue with battle
+// turns 6+
+ROMC:49BD IF @CF54.b = 0x06				// turn 6
+ROMC:49C2 GOTO 49D5						// Apollo attacks with Masmune
+ROMC:49C5 LET @CF13.w = @D848.b AND 0x01 + 0xF9
+// set next attack to Masmune or Flare on even or odd turn, resp.
+// return here after determine Apollo's next attack
+ROMC:49CF GOSUB 6EC7						// initialize item counter CF04.b => 0x00
+ROMC:49D2 GOTO 48B7						// find targets
+// attack with Masmune
+ROMC:49D5 LET @CF13.w = 0xF8			// set next attack to Masmune
+ROMC:49DA GOTO 49CF						// find targets and continue with battle
+// Apollo final Flare
+ROMC:49DD LET @CF13.w = 0xFC			// set next attack to 0xFC = final flare
+ROMC:49E2 GOTO 49CF						// determine next attack and targets
+// end Apollo fight script
+
+// PROGRAM THREE
+// determine order of attacks
+ROMC:49E5 LET @CF00.b = 0x00			// initialize active player
+ROMC:49EA LET @CF62.w = 0xD803			// pointer to individual's turn order
+ROMC:49F0 LET @CF6B.b = 0x00			// counter to total individuals
+// loop through enemy groups per player
+ROMC:49F5 LET @CF02.b = 0x00			// initialize active player individual
+ROMC:49FA GOSUB 6788						// get max lives @CF03.b
+ROMC:49FD LET @CF68.w = 0xCF6C + @CF00.b	//pointer to CF6C - CF70
+ROMC:4A05 LET @(CF68).b = @CF03.b		// set to max lives
+ROMC:4A0A IF @CF03.b = 0x00				// active player has no lives left
+ROMC:4A0F GOTO 4A49						// go to next active player
+ROMC:4A12 GOSUB 6E72						// initialize CF31.b, get active player's block
+ROMC:4A15 LET @CF30.b = 0x0F			// get pointer to player's AGL
+ROMC:4A1A LET @CF6A.b = @(CF30).b		// store active player's AGL
+ROMC:4A1F IF @CF00.b <= 0x04			// if active player is in party
+ROMC:4A24 LET @CF6A.b = @CF6A.b / 0x04 + @CF6A.b		// AGL = AGL * 1.25
+// loop through each individual until max lives
+ROMC:4A2D LET @(CF62).b = RANDOM(@CF6A.b) + @CF6A.b	// @D803 = CF6A.b
+ROMC:4A34 INC @CF62.b					// increment pointer to 0xD804, 06, etc
+ROMC:4A36 LET @(CF62).b = @CF00.b		// @D804 = @CF00.b, player ID
+ROMC:4A3B INC @CF6B.b					// @CF6B ++, total individuals
+ROMC:4A3D INC @CF62.b					// increment pointer to 0xD805, 07, etc
+ROMC:4A3F INC @CF02.b					// next active player individual
+ROMC:4A41 IF @CF02.b < @CF03.b			// less than max lives
+ROMC:4A46 GOTO 4A2D						// loop to next player individual
+ROMC:4A49 INC @CF00.b					// next active player
+// enemy has no lives left
+ROMC:4A4B IF @CF00.b <= 0x07			// active player is less than party+enemy groups
+ROMC:4A50 GOTO 49F5						// loop to next active player
+// all active players (party+enemy) are now put on list
+ROMC:4A53 LET @CF60.b = 0x00			// initialize sort counter
+// loop bubble sort - highest to lowest turn order for each pair
+ROMC:4A58 LET @CF61.b = 0x00			// initialize individual A
+// loop through list of all individuals
+ROMC:4A5D LET @CF62.w = @CF61.b * 0x02 + 0xD803		// pointer to individual A's turn order
+ROMC:4A67 LET @CF64.w = @CF62.w + 0x02	// pointer to individual B after CF62
+ROMC:4A6E IF @(CF62).b > @(CF64).b		// A goes before B
+ROMC:4A73 GOTO 4A85						// order is ok, no change
+// start swap, using temp var
+ROMC:4A76 LET @CF66.w = @(CF62).w		// set temp var to A's turn order and player ID
+ROMC:4A7B LET @(CF62).w = @(CF64).w	// set A's turn order and player ID to B
+ROMC:4A80 LET @(CF64).w = @CF66.w		// complete the swap
+// next on the list
+ROMC:4A85 INC @CF61.b					// next individual A
+ROMC:4A87 IF @CF61.b < @CF6B.b - @CF60.b - 0x01	// not reached end of list
+ROMC:4A90 GOTO 4A5D						// continue loop to next individual on list
+ROMC:4A93 INC @CF60.b					// increment sort counter
+ROMC:4A95 IF @CF60.b < @CF6B.b			// sort not done
+ROMC:4A9A GOTO 4A58						// continue sort
+ROMC:4A9D LET @CF60.b = 0x00			// initialize counter
+// loop through all individuals, get their max lives
+ROMC:4AA2 LET @CF62.w = @CF60.b * 0x02 + 0xD804	// pointer to individual's player ID
+ROMC:4AAC LET @CF64.w = @(CF62).b + 0xCF6C	// pointer to individual's max lives = individual's ID
+ROMC:4AB4 DEC @CF62.b					// pointer to individual's turn order
+ROMC:4AB6 LET @(CF62).b = @(CF64).b - 0x01	// turn order = ID - 1
+ROMC:4ABD LET @(CF64).w = @(CF64).w - 0x01	// ID = ID - 1
+ROMC:4AC4 INC @CF60.b					// increment counter
+ROMC:4AC6 IF @CF60.b < @CF6B.b			// counter < total individuals
+ROMC:4ACB GOTO 4AA2						// continue loop
+ROMC:4ACE END
+
+// PROGRAM FOUR
+// choose random action and target for confused individuals
+ROMC:4ACF GOSUB 6812								// get individual ID => @CF11.w
+ROMC:4AD2 GOSUB 67E0							// get individual status => @CF06.b
+ROMC:4AD5 IF 0x00 < @CF06.b AND 0x03			// if individual is sleeping or paralyzed
+ROMC:4ADC GOTO 4B97								// end the program
+ROMC:4ADF LET @D90C.b = 0x5B					// message : ^
+ROMC:4AE5 SYS 0020								// print message
+ROMC:4AE8 LET @D906.w = @CF12.b				// set string = player ID
+ROMC:4AEE LET @D90C.b = 0x19					// set message : ^$CHAR
+ROMC:4AF4 SYS 0020								// print message
+ROMC:4AF7 IF RANDOM(0x64) > 0x0A				// 90% chance (11-100)
+ROMC:4AFC GOTO 4B15								// bad random roll, select random attack
+ROMC:4AFF LET @CF06.b = @CF06.b AND 0xF7	// remove confused status
+ROMC:4B06 GOSUB 67F8								// set individual status
+ROMC:4B09 LET @D90C.b = 0x4D					// set message : ^Back to sane.
+ROMC:4B0F SYS 0020								// print message
+ROMC:4B12 GOTO 4B97								// end program
+// bad random roll, choose random attack
+ROMC:4B15 LET @D90C.b = 0x05					// set message : is^Confused.
+ROMC:4B1B SYS 0020								// print message
+ROMC:4B1E GOSUB 6EF9								// initialize individual status
+ROMC:4B21 GOSUB 6E94							// get pointer to individual status => @CF32.w
+// BUG
+ROMC:4B24 LET @CF52.b = RANDOM(0x07) * 0x03	// store random item, 3 bytes long
+ROMC:4B2B GOSUB 6E7C								// set high byte of pointer to attacking player's data, Dn => @CF31.b
+ROMC:4B2E LET @CF30.b = 0x12 + @CF52.b		// set low byte of pointer, first item
+ROMC:4B35 LET @CF13.w = @(CF30).b				// get item ID
+ROMC:4B3A GOSUB 67A4							// get pointer to item data, 1st byte => @CF20.b
+ROMC:4B3D IF 0x01 = @CF20.b AND 0x01			// if item shown in battle
+ROMC:4B44 GOTO 4B4F								// item good
+// choose item
+ROMC:4B47 LET @CF13.w = 0xFF					// set item data ID = FF
+ROMC:4B4C GOTO 4B7F								// no attack, do nothing, skip next section
+// item good
+ROMC:4B4F IF 0x10 = @CF20.b AND 0x10			// if item affects all players
+ROMC:4B56 GOTO 4B6C								//
+ROMC:4B59 LET @CF15.b = RANDOM(0x07)		// choose random target from among all allies and foes
+ROMC:4B5E GOSUB 6763							// get target's number of lives => @CF1A.b
+ROMC:4B61 IF @CF1A.b = 0x00						// if target has no lives left
+ROMC:4B66 GOTO 4B47								// unset item, skip attack, do nothing
+ROMC:4B69 GOTO 4B73								// go ahead with attack
+// frontmost target
+ROMC:4B6C LET @CF15.b = RANDOM(0x01) + 0x08	// random between 8 or 9
+// set attack target
+ROMC:4B73 LET @CF36.w = @CF32.w + 0x05		// pointer to next attack item target
+ROMC:4B7A LET @(CF36).b = @CF15.b				// set next attack item target
+// close program
+ROMC:4B7F LET @CF36.w = @CF32.w + 0x03		// pointer to next attack item data ID in ROM
+ROMC:4B86 LET @(CF36).w = @CF13.w				// set item data ID to chosen attack
+ROMC:4B8B LET @CF36.w = @CF32.w + 0x06		// pointer to item ID in Abilities
+// result of BUG from above
+ROMC:4B92 LET @(CF36).b = @CF52.b				// set item ID
+ROMC:4B97 END
+
+// PROGRAM SIX
+// end of turn maintenance
+ROMC:4B98 GOSUB 6EDC					// initialize target to first player => @CF15.b
+// loop through targets
+ROMC:4B9B GOSUB 6763							// get target's number of lives @CF14.b
+ROMC:4B9E IF @CF1A.b = 0x00					// if no lives left
+ROMC:4BA3 GOTO 4C38							// go to next target player
+ROMC:4BA6 GOSUB 6A5A						// set max lives => @CF03.b = @Dn00, set target individual ID => @CF16.b
+ROMC:4BA9 GOSUB 67EC						// set target individual's status => @CF07.b
+ROMC:4BAC IF 0x00 < @CF07.b AND 0x90		// if individual is stoned or stunned
+ROMC:4BB3 GOTO 4C2E							// go to next target individual
+ROMC:4BB6 IF 0x00 = @CF07.b AND 0x04		// if individual is not poisoned
+ROMC:4BBD GOTO 4C2E							// go to next target individual
+ROMC:4BC0 LET @D906.w = @CF15.b			// set string = target player
+ROMC:4BC6 LET @D90C.b = 0x19				// set message : ^$CHAR
+ROMC:4BCC SYS 0020							// print message
+ROMC:4BCF IF RANDOM(0x64) <= 0x14			// 20% chance (0-20)
+ROMC:4BD4 GOTO 4C1E							// remove poison
+ROMC:4BD7 GOSUB 6E84							// set high byte of ptr to target player's data => @CF31.b = 0xDn
+ROMC:4BDA LET @CF30.b = 0x0C				// set low byte of ptr to max HP
+ROMC:4BDF LET @CF74.w = @(CF30).w / 0x14		// maxHP / 20 = 5%
+ROMC:4BE6 LET @CF74.w = RANDOM(@CF74.b) + @CF74.w + 0x01	// 5-10%
+ROMC:4BEF GOSUB 6A6D						// get ptr to current HP => @CF32.w
+ROMC:4BF2 LET @D900.w = @CF74.w			// set string = damage from poison
+ROMC:4BF8 LET @D90C.b = 0x06				// set message : gets^$AMOUNTdamages^by poison.
+ROMC:4BFE SYS 0020							// print message
+ROMC:4C01 LET @CF0A.w = @(CF32).w -- @CF74.w	// set temp current HP
+ROMC:4C08 LET @(CF32).w = @CF0A.w			// set current HP
+ROMC:4C0D GOSUB 6969							// check if took lethal damage
+ROMC:4C10 IF @CF76.b = 0x00					// flag, not dead
+ROMC:4C15 GOTO 4C2E							// go to next target individual
+ROMC:4C18 GOSUB 5543							// target just died
+ROMC:4C1B GOTO 4C2E							// go to next individual
+// remove poison
+ROMC:4C1E LET @(CF32).b = @CF07.b AND 0xFB	// new status without poison
+ROMC:4C25 LET @D90C.b = 0x4E				// set message : ^Neutralized.
+ROMC:4C2B SYS 0020							// print message
+// go to next target individual
+ROMC:4C2E INC @CF16.b						// increment individual ID
+ROMC:4C30 IF @CF16.b < @CF03.b				// if ID < max lives
+ROMC:4C35 GOTO 4BA9							// continue loop with next individual
+// go to next target player
+ROMC:4C38 INC @CF15.b						// next target player
+ROMC:4C3A IF @CF15.b <= 0x07				// if less than party+enemy groups
+ROMC:4C3F GOTO 4B9B							// continue loop all targets
+ROMC:4C42 END									// exit program
+
+// PROGRAM SEVEN
+// restore HP at end of turn
+ROMC:4C43 LET @CF00.b = 0x00			// initialize active player
+// loop through all players, enemies
+ROMC:4C48 GOSUB 6755						// check number of lives
+ROMC:4C4B IF @CF1A.b = 0x00				// if no lives left
+ROMC:4C50 GOTO 4C86						// go to next active player
+ROMC:4C53 GOSUB 6EC7						// initialize item counter CF04.b => 0x00
+// loop through all items
+ROMC:4C56 GOSUB 6771						// get current item ID => @CF13.w
+ROMC:4C59 IF 0xFE = @CF13.b				// if item is Recover
+ROMC:4C5E GOTO 4C91						// go to Recover function
+ROMC:4C61 IF 0x7E = @CF13.b				// if item is Selfix
+ROMC:4C66 GOTO 4C6C						// go to Selfix function
+ROMC:4C69 GOTO 4C7C						// go to next item
+// item is Selfix
+ROMC:4C6C GOSUB 6E72						// initialize CF31.b, get active player's block
+ROMC:4C6F LET @CF30.b = 0x0B			// get player's race
+ROMC:4C74 IF @(CF30).b = 0x03			// if player is Robot
+ROMC:4C79 GOTO 4C91						// recover HP
+// go to next item
+ROMC:4C7C INC @CF04.b					// increment item counter
+ROMC:4C7E IF @CF04.b <= 0x07			// if item < maxItems
+ROMC:4C83 GOTO 4C56						// continue loop with next item
+ROMC:4C86 INC @CF00.b					// increment active player
+ROMC:4C88 IF @CF00.b <= 0x07			// if active player < maxPlayers
+ROMC:4C8D GOTO 4C48						// continue loop with next player
+ROMC:4C90 END								// exit program 7
+
+// recover HP
+ROMC:4C91 LET @CF76.b = 0x00			// initialize flag, no changes
+ROMC:4C96 LET @D906.w = @CF00.b		// set string = active player
+ROMC:4C9C LET @D90C.b = 0x09			// set message : ^$CHAR^recovered HP.
+ROMC:4CA2 LET @CF02.b = 0x00			// initialize individual
+ROMC:4CA7 GOSUB 6788						// get max lives => @CF03.b
+ROMC:4CAA GOSUB 6E72					// initialize CF31.b, get active player's block
+ROMC:4CAD LET @CF30.b = 0x0C			// set ptr's low byte to maxHP
+ROMC:4CB2 LET @CF0C.w = @(CF30).w		// store maxHP
+// loop through all individuals
+ROMC:4CB7 GOSUB 67D4						// get individual status => @CF06.b
+ROMC:4CBA IF 0x00 < @CF06.b AND 0x90	// if individual is stoned or stunned
+ROMC:4CC1 GOTO 4CF3						// go to next individual
+ROMC:4CC4 LET @CF32.w = 0x01			// initialize ptr's low byte to individual HP
+ROMC:4CC9 GOSUB 6EB6						// get pointer to active individual data => @CF32.w
+ROMC:4CCC LET @CF08.w = @(CF32).w		// store old HP
+ROMC:4CD1 LET @CF0A.w = @CF0C.w / 0x0A + @CF08.w		// new current HP = maxHP / 10 + currHP
+ROMC:4CDA IF @CF0A.w > @CF0C.w		// if newHP > maxHP
+ROMC:4CDF LET @CF0A.w = @CF0C.w		// newHP = maxHP
+ROMC:4CE4 LET @(CF32).w = @CF0A.w		// set oldHP = newHP
+ROMC:4CE9 IF @CF0A.w > @CF08.w		// if newHP > oldHP
+ROMC:4CEE LET @CF76.b = 0x01			// flag, HP changed
+ROMC:4CF3 INC @CF02.b					// increment next individual
+ROMC:4CF5 IF @CF02.b < @CF03.b			// if less than max lives
+ROMC:4CFA GOTO 4CB7						// continue loop with next individual
+ROMC:4CFD IF @CF76.b = 0x01				// if HP changed
+ROMC:4D02 SYS 0020						// print message
+ROMC:4D05 GOTO 4C86						// go to next active player
+
+
+// PROGRAM EIGHT
+// drop money, item, meat
+ROMC:4D08 LET @CF00.b = 0x05			// initialize active player to 1st enemy group
+ROMC:4D0D LET @CF77.l = 0x00			// initialize gold drop
+ROMC:4D12 LET @D845.b = 0x00			// initialize flag, meat dropped
+// loop through all enemy groups
+ROMC:4D18 GOSUB 6E72						// initialize CF31.b, get active player's block
+ROMC:4D1B LET @CF30.b = 0x00			// initialize ptr low byte to player max lives
+ROMC:4D20 LET @CF19.b = @(CF30).b		// store max lives
+ROMC:4D25 IF @CF19.b = 0x00				// if no lives
+ROMC:4D2A GOTO 4D82						// go to next active enemy group
+ROMC:4D2D GOSUB 6796					// get species => @CF1B.b
+ROMC:4D30 LET @CF7A.w = @CF1B.b + 0x7C50	// set ptr to gold drop level
+ROMC:4D38 LET @CF7A.w = @(CF7A).b AND 0x1F * 0x02 + 0x7E50	// set ptr to gold @ level GaL
+ROMC:4D44 LET @CF77.l = @(CF7A).w / 0x0A * @CF19.b + @(CF7A).w * @CF19.b + @CF77.l		// totalGold = GaL / 10 * maxLives + GaL * maxLives + totalGold
+ROMC:4D53 LET @CF36.w = 0x7C50 + @CF1B.b		// set ptr to item / meat drop chance
+ROMC:4D5B LET @CF38.b = 0x00						// initialize low byte of gold level flags
+ROMC:4D60 LET @CF38.b = @(CF36).b >> 0x06 AND 0x01 * 0x50	// chance = 2nd lowest bit * 80
+ROMC:4D6B LET @CF38.b = @(CF36).b >> 0x05 AND 0x01 * 0x14 + @CF38.b + @CF19.b
+// flags = 3rd lowest bit * 20 + chance + maxLives
+ROMC:4D7A IF RANDOM(0x64) <= @CF38.b		// if roll out of 100
+ROMC:4D7F GOTO 4D90								// drop meat or item instead
+// go to next active enemy group
+ROMC:4D82 INC @CF00.b							// increment active player counter
+ROMC:4D84 IF @CF00.b <= 0x07					// if counter < max enemies
+ROMC:4D89 GOTO 4D18								// continue loop with next player
+ROMC:4D8C GOSUB 4E25								// set, print new party gold
+ROMC:4D8F END										// exit program 8
+
+// drop meat or item
+ROMC:4D90 IF 0x80 = @(CF36).b AND 0x80		// if enemy can drop meat
+ROMC:4D97 GOTO 4E07								// drop meat
+
+// drop item
+ROMC:4D9A LET @CF30.w = @CF00.b + 0xD844	// set ptr to ptr to species stats in ROM
+ROMC:4DA2 LET @CF04.b = @(CF30).b				// get species max number of items
+ROMC:4DA7 LET @CF04.b = RANDOM(@CF04.b)	// item = roll out of maxItems
+ROMC:4DAC GOSUB 6771							// get current item ID => @CF13.w
+ROMC:4DAF IF @CF13.w > 0x7F						// if item is a skill
+ROMC:4DB4 GOTO 4D82								// go to next active player
+ROMC:4DB7 LET @CF36.w = 0x7E80 + @CF13.b	// set ptr to item uses
+ROMC:4DBF LET @CF38.b = @(CF36).b				// store item uses
+ROMC:4DC4 LET @CF02.b = 0x00					// initialize inventory slot
+// loop through all inventory slots
+ROMC:4DC9 LET @CF34.w = @CF02.b * 0x02 + 0xC2B9	// initialize ptr to party inventory slot 1
+ROMC:4DD3 IF 0xFF = @(CF34).b					// if inventory slot is empty
+ROMC:4DD8 GOTO 4DE8								// put item in slot
+ROMC:4DDB INC @CF02.b							// increment inventory slot
+ROMC:4DDD IF @CF02.b <= 0x10					// if slot < maxSlots
+ROMC:4DE2 GOTO 4DC9								// continue loop with next slot
+ROMC:4DE5 GOTO 4D82								// go to next active player
+// pick up item
+ROMC:4DE8 LET @(CF34).b = @CF13.b				// slot item ID = new item ID
+ROMC:4DED INC @CF34.w							// move ptr to item uses
+ROMC:4DEF LET @(CF34).b = @CF38.b				// slot item uses = new item uses
+ROMC:4DF4 GOSUB 4E25								// set, print new party gold
+ROMC:4DF7 LET @D906.w = @CF13.b				// set string = item
+ROMC:4DFD LET @D90C.b = 0x0B					// set message : ^Received $ITEM.
+ROMC:4E03 SYS 0020								// print message
+ROMC:4E06 END										// exit program 8
+
+// drop meat
+ROMC:4E07 GOSUB 4E25								// set, print new party gold
+ROMC:4E0A LET @CF10.b = @CF1B.b				// get species
+ROMC:4E0F LET @D845.b = 0x01					// check flag
+ROMC:4E15 LET @D908.w = @CF00.b				// set string = enemy group ID
+ROMC:4E1B LET @D90C.b = 0x0C					// set message : ^$CHAR's meat!
+ROMC:4E21 SYS 0020								// print message
+ROMC:4E24 END										// exit program 8
+
+// print gold
+ROMC:4E25 LET @CF7C.l = @C2A2.l					// tempGold = partyGold
+ROMC:4E2B LET @CF77.l = @CF77.l + @CF7C.l		// newGold = tempGold + partyGold
+ROMC:4E32 LET @CF4B.l = @7FF0.l					// get maxGold
+ROMC:4E38 IF @CF77.l > @CF4B.l					// if newGold > maxGold
+ROMC:4E3D LET @CF77.l = @CF4B.l					// newGold = maxGold
+ROMC:4E42 LET @D900.w = @CF77.l - @CF7C.l	// set message variable : $Amount (gold)
+ROMC:4E4A LET @D90C.b = 0x0A					// set message : ^Received $AMOUNT GP.
+ROMC:4E50 SYS 0020								// print message
+ROMC:4E53 LET @C2A2.l = @CF77.l					// partyGold = newGold
+ROMC:4E59 RETURN
+
+// PROGRAM NINE
+// monster transformation
+ROMC:4E5A LET @D846.b = 0x00					// initialize flag
+ROMC:4E60 LET @CF30.w = @D84C.b * 0x0100 + 0xD00B		// set ptr to eater race
+ROMC:4E6C LET @CF89.b = @(CF30).b				// store eater race
+ROMC:4E71 IF @CF89.b = 0x02						// if race is monster
+ROMC:4E76 GOTO 4E83								// ok transform
+ROMC:4E79 LET @D90C.b = 0x0D					// set message : ^Nothing happened.
+ROMC:4E7F SYS 0020								// print message
+ROMC:4E82 END										// exit program 9
+
+// meat ok to eat
+ROMC:4E83 LET @CF30.w = @D84C.b * 0x0100 + 0xD00A		// set ptr to meat species
+ROMC:4E8F LET @CF1B.b = @(CF30).b				// store meat species
+ROMC:4E94 LET @CF36.w = 0x7800 + @CF1B.b	// set ptr to monster type/class in ROM
+ROMC:4E9C LET @CF38.b = @(CF36).b				// get type/class
+ROMC:4EA1 LET @CF81.b = @CF38.b / 0x10		// store type (drop class)
+ROMC:4EA8 LET @CF82.b = @CF38.b AND 0x0F	// store class (drop type)
+ROMC:4EAF LET @CF36.w = 0x7800 + @CF10.b	// set ptr to active player species in ROM
+ROMC:4EB7 LET @CF38.b = @(CF36).b				// get type/class
+ROMC:4EBC LET @CF83.b = @CF38.b / 0x10		// store type
+ROMC:4EC3 IF @CF83.b > 0x05						// if type > 5 (ie 6 to 11)
+ROMC:4EC8 INC @CF83.b							// increment type
+ROMC:4ECA LET @CF84.b = @CF38.b AND 0x0F	// store class
+ROMC:4ED1 LET @CF85.b = @CF81.b + @CF83.b	// set new type = meatType + oldType
+ROMC:4ED8 IF @CF85.b < 0x06						// if newType < 6 (ie 0-5)
+ROMC:4EDD LET @CF85.b = @CF85.b + 0x0C		// newType = newType + 12
+ROMC:4EE4 IF @CF85.b > 0x11						// if newType > 17
+ROMC:4EE9 LET @CF85.b = @CF85.b - 0x0C		// newType = newType - 12
+ROMC:4EF0 LET @CF85.b = @CF85.b - 0x06		// newType = newType - 6
+ROMC:4EF7 LET @CF86.b = @CF82.b + @CF84.b -- 0x01		// newClass = meatClass + oldClass -- 1
+ROMC:4F00 IF @CF86.b > 0x02						// if newClass > 2
+ROMC:4F05 LET @CF86.b = 0x02					// newClass = 2
+ROMC:4F0A LET @CF36.w = 0x7D50 + @CF1B.b	// set ptr to meat monster DS
+ROMC:4F12 LET @CF87.b = @(CF36).b AND 0x0F	// store new monster DS
+ROMC:4F19 LET @CF36.w = 0x7D50 + @CF10.b	// set ptr to active monster DS
+ROMC:4F21 IF @CF87.b < @(CF36).b AND 0x0F	// if newDS < eatingDS
+ROMC:4F28 LET @CF87.b = @(CF36).b AND 0x0F	// newDS = eatingDS
+ROMC:4F2F LET @CF88.w = @CF85.b * 0x03 + @CF86.b * 0x10 + @CF87.b + 0x7900
+// set ptr to evolution chart = newType * 3 + newClass * 16 + newDS + evolutionChartOffset
+ROMC:4F3F LET @D847.b = @(CF88).b				// store final evolved species
+ROMC:4F45 IF @CF1B.b = @D847.b					// if oldSpecies = newSpecies
+ROMC:4F4B GOTO 4E79								// nothing happened
+ROMC:4F4E LET @D846.b = 0x01					// monster transformed
+ROMC:4F54 LET @D908.w = @CF1B.b				// set string = old species
+ROMC:4F5A LET @D90A.w = @D847.b				// set string = new species
+ROMC:4F61 LET @D90C.b = 0x0E					// set message : ^$RACE changed to $RACE.
+ROMC:4F67 SYS 0020								// print message
+ROMC:4F6A END										// exit program 9
+
+
+// PROGRAM TEN
+// human and mutant stat growth
+ROMC:4F6B LET @CF1B.b = @D50A.b					// species of 1st enemy group
+ROMC:4F71 LET @CF36.w = 0x7D50 + @CF1B.b		// pointer to species DS
+ROMC:4F79 LET @CF1C.b = @(CF36).b AND 0x0F		// store enemy DS
+ROMC:4F80 LET @CF00.b = 0x00						// initialize active player
+// loop through all players
+ROMC:4F85 LET @CF12.b = @CF00.b * 0x02			// initialize times to bitshift right
+ROMC:4F8C GOSUB 6DD0								// get player data offset from party order => @CFD0.b
+ROMC:4F8F GOSUB 6E72									// initialize CF31.b, get active player's block
+ROMC:4F92 LET @CF30.b = 0x0B						// ptr to player's race
+ROMC:4F97 LET @CF89.b = @(CF30).b					// get player's race
+ROMC:4F9C IF @CF89.b > 0x01							// if not human or mutant
+ROMC:4FA1 GOTO 5034									// continue loop to next active player
+ROMC:4FA4 LET @CF02.b = 0x00						// initialize active individual
+ROMC:4FA9 GOSUB 67D4								// get individual status => @CF06.b
+ROMC:4FAC IF 0x00 < @CF06.b AND 0xB0				// if player stoned or stunned
+ROMC:4FB3 GOTO 5034									// continue loop to next active player
+ROMC:4FB6 GOSUB 6E72									// initialize CF31.b, get active player's block
+ROMC:4FB9 LET @CF30.b = 0x0C						// set pointer to maxHP
+ROMC:4FBE LET @CF0C.w = @(CF30).w					// store maxHP
+// get human/mutant equivalent DS level for maxHP
+ROMC:4FC3 LET @CFB3.b = @CF0C.b / 0x1A + 0x32		// denominator
+ROMC:4FCC LET @CF0E.w = @CF0C.w / @CFB3.b			// bonus chance points = maxHP / denominator
+ROMC:4FD3 LET @CF94.w = @CF89.b * 0x10 + 0x7F90	// human/mutant skill gain rate
+ROMC:4FDD GOSUB 5218									// get HP growth chance => @CF96.b
+ROMC:4FE0 IF RANDOM(0xC8) < @CF96.b					// roll the dice out of 200, doesn't count 0
+ROMC:4FE5 GOTO 503F										// good roll
+ROMC:4FE8 LET @CF94.w = @CF89.b * 0x10 + 0x7F92	// human/mutant maxHP growth rate
+ROMC:4FF2 GOSUB 5218										// get HP growth chance => @CF96.b
+ROMC:4FF5 IF RANDOM(0xC8) <= @CF96.b				// roll dice out of 200, counts 0
+ROMC:4FFA GOTO 515A										// good roll
+ROMC:4FFD LET @CF36.w = @CF00.b * 0x02 + 0xD84D	// initialize pointer to last item used by player
+ROMC:5007 LET @CF36.w = 0x7B40 + @(CF36).w			// set pointer to item's stat type
+ROMC:500F LET @CF38.b = @(CF36).b					// store item's stat
+ROMC:5014 LET @CF61.b = 0x00							// initialize stat index
+// loop through each stat after bitshifts
+ROMC:5019 IF 0x00 < @CF38.b AND 0x80			// if stat matches
+ROMC:5020 GOTO 5197										// raise stats
+ROMC:5023 LET @CF38.b = @CF38.b << 0x01		// shift left
+ROMC:502A INC @CF61.b									// increment stat index
+ROMC:502C IF @CF61.b <= 0x03							// if stat is valid
+ROMC:5031 GOTO 5019										// continue loop with next stat
+// go to next player
+ROMC:5034 INC @CF00.b									// go to next player
+ROMC:5036 IF @CF00.b <= 0x03							// if player in main party
+ROMC:503B GOTO 4F85										// continue loop with next player
+ROMC:503E END													// end program ten
+// END PROGRAM TEN MAIN LOOP
+
+// gain new skill
+ROMC:503F LET @CF60.b = 0x00							// initialize loop counter
+ROMC:5044 LET @CF8A.w = @CF1C.b * 0x18 + 0x0F		// initialize max die for skill gain
+ROMC:504D IF @CF8A.w > 0xFF								// die > 255
+ROMC:5052 LET @CF8A.w = 0xFF							// set die = 255
+ROMC:5057 LET @CF52.b = RANDOM(@CF8A.b)		// roll out of die
+// loop through all items on skill list
+ROMC:505C LET @CF36.w = 0x7FB0 + @CF60.b		// initialize pointer to chance on skill list at index counter
+ROMC:5064 IF @CF52.b <= @(CF36).b			// if roll <= chance
+ROMC:5069 GOTO 5079								// good roll, learn skill
+ROMC:506C INC @CF60.b							// increment counter
+ROMC:506E IF @CF60.b <= 0x20					// max 32 items, iterations
+ROMC:5073 GOTO 505C								// continue loop with next item
+ROMC:5076 GOTO 5034								// go to next player
+// see what skill is learned
+ROMC:5079 LET @CF36.w = 0x7FD0 + @CF60.b		// set pointer to chosen item ID on skills list
+ROMC:5081 LET @CF38.b = @(CF36).b				// get item ID for new skill
+ROMC:5086 LET @CFB7.b = 0x00						// initialize skills count
+ROMC:508B GOSUB 6EC7									// initialize item counter CF04.b => 0x00
+ROMC:508E LET @CF8C.w = @CFD0.b + 0xC20F		// set pointer to player's 1st item
+// loop through all items
+ROMC:5096 LET @CF36.w = @CF04.b * 0x02 + @CF8C.w	// set pointer to item on player's list
+ROMC:509F IF @(CF36).b >= 0x80		// if item is a skill
+ROMC:50A4 INC @CFB7.b					// increment skills count
+ROMC:50A6 IF @(CF36).b = 0xFF			// if item is no move
+ROMC:50AB DEC @CFB7.b					// decrement skills count
+ROMC:50AD IF @CFB7.b = 0x04			// if count = 4
+ROMC:50B2 GOTO 5100						// replace skill
+ROMC:50B5 INC @CF04.b					// go to next item
+ROMC:50B7 IF @CF04.b <= 0x07			// if not reached max items
+ROMC:50BC GOTO 5096						// continue loop with next item
+ROMC:50BF GOSUB 6EC7						// initialize item counter CF04.b => 0x00
+// loop through all items to find empty slot
+ROMC:50C2 LET @CF36.w = @CF04.b * 0x02 + @CF8C.w	// set pointer to item on player's list
+ROMC:50CB IF @(CF36).b = 0xFF			// if item is no move
+ROMC:50D0 GOTO 5100						// add skill
+ROMC:50D3 INC @CF04.b					// increment counter
+ROMC:50D5 IF @CF04.b <= 0x07			// if not reached max items
+ROMC:50DA GOTO 50C2						// continue loop with next item
+ROMC:50DD LET @CF04.b = 0x08		// initialize item counter to 8
+// loop through all items
+ROMC:50E2 DEC @CF04.b									// decrement item counter
+ROMC:50E4 LET @CF36.w = @CF04.b * 0x02 + @CF8C.w	// set pointer to item on player's list
+ROMC:50ED IF @(CF36).b > 0x7F			// if item is a skill
+ROMC:50F2 GOTO 5100						// replace skill
+ROMC:50F5 IF @CF04.b > 0x00			// if more items to test
+ROMC:50FA GOTO 50E2						// continue loop
+ROMC:50FD GOTO 5034						// go to next player
+
+// ready to learn, slot at @CF36.w
+ROMC:5100 LET @D906.w = @CF00.b		// set string = player ID
+ROMC:5106 LET @D90C.b = 0x0F				// set message : $CHAR
+ROMC:510C SYS 0020								// print message
+ROMC:510F IF @(CF36).b = 0xFF				// if item is no move
+ROMC:5114 GOTO 5126							// just learn skill
+ROMC:5117 LET @D906.w = @(CF36).b	// set message variable : old skill
+ROMC:511D LET @D90C.b = 0x10			// set message : lost^$ITEM^and
+ROMC:5123 SYS 0020								// print message
+// add skill to list
+ROMC:5126 LET @CF8C.w = @CF04.b * 0x02 + @CF8C.w	// move pointer to player's item at C2nF
+ROMC:512F LET @(CF8C).b = @CF38.b			// set item ID to new skill
+ROMC:5134 LET @D906.w = @CF38.b			// set message variable : new skill
+ROMC:513A LET @CF36.w = 0x7E80 + @CF38.b		// set pointer to item uses in ROM
+ROMC:5142 LET @CF38.b = @(CF36).b			// store item uses
+ROMC:5147 INC @CF8C.w							// move pointer
+ROMC:5149 LET @(CF8C).b = @CF38.b			// set item uses to new skill
+ROMC:514E LET @D90C.b = 0x11					// set message : acquired^$ITEM.
+ROMC:5154 SYS 0020									// print message
+ROMC:5157 GOTO 5034								// go to next player
+
+// gain max HP
+ROMC:515A IF @CF0C.w >= 0x03E7				// if maxHP > 999
+ROMC:5160 GOTO 5034								// go to next player
+ROMC:5163 LET @CF0E.w = @CF0C.w / 0x32 + RANDOM(0x0A) + 0x05 + @CF0C.w
+// newMaxHP = maxHP / 50 + rand(10) + 5 + maxHP
+ROMC:5170 LET @CF8E.w = @CFD0.b + 0xC209		// initialize pointer to player's maxHP at C2n9
+ROMC:5178 LET @(CF8E).w = @CF0E.w		// set maxHP to newMaxHP
+ROMC:517D LET @D906.w = @CF00.b			// set message variable : player name
+ROMC:5183 LET @D900.w = @CF0E.w - @CF0C.w	// set message variable : amount HP gained
+ROMC:518B LET @D90C.b = 0x12					// set message : ^$CHAR's Max HP^gained by $AMOUNT.
+ROMC:5191 SYS 0020									// print message
+ROMC:5194 GOTO 5034								// go to next player
+
+// ready to raise stat
+// set pointer to stat growth rate table (bug: change 0x05 to 0x08)
+ROMC:5197 LET @CF94.w = @CF89.b * 0x05 + @CF61.b * 0x02 + 0x7F94
+// pointer = race * 8 + stat * 2 + 0x7F94
+ROMC:51A5 LET @CF96.b = @(CF94).b					// get base chance
+ROMC:51AA INC @CF94.w									// move ptr to bonus chance
+ROMC:51AC LET @CF90.w = @CFD0.b + 0xC20B + @CF61.b	// set pointer to player's stat
+ROMC:51B6 LET @CF92.b = @(CF90).b					// get player's stat
+ROMC:51BB IF @CF92.b >= 0x63							// if stat > 99
+ROMC:51C0 GOTO 5034										// go to next player
+// get human/mutant equivalent DS level for stat
+ROMC:51C3 LET @CFB3.b = @CF92.b / 0x14 + 0x05		// denominator
+ROMC:51CC LET @CF93.b = @CF92.b * @(CF94).b / @CFB3.b		// bonus chance points
+ROMC:51D5 LET @CF96.b = @CF1C.b * @(CF94).b -- @CF93.b + @CF96.b	// final growth chance
+ROMC:51E0 IF RANDOM(0xC8) <= @CF96.b		// if roll out of 200 is good, counts 0
+ROMC:51E5 GOTO 51EB									// raise stat
+ROMC:51E8 GOTO 5034									// go to next player
+// raise stat
+ROMC:51EB INC @CF92.b								// increment stat
+ROMC:51ED LET @(CF90).b = @CF92.b				// update player stat
+ROMC:51F2 LET @D906.w = @CF00.b				// set message variable : player name
+ROMC:51F8 LET @D90C.b = 0x0F						// set message : ^$CHAR
+ROMC:51FE SYS 0020										// print message
+ROMC:5201 LET @D90C.b = 0x13 + @CF61.b	// set message : 's Strength; 's Agility; 's Mana; 's Defense
+ROMC:5209 SYS 0020										// print message
+ROMC:520C LET @D90C.b = 0x08						// set message : Up!
+ROMC:5212 SYS 0020										// print message
+ROMC:5215 GOTO 5034									// go to next player
+
+// get HP chance
+// gosub from 4FD3
+ROMC:5218 LET @CF96.b = @(CF94).b					// initialize chance to base growth rate
+ROMC:521D INC @CF94.w								// move ptr to bonus rate
+ROMC:521F LET @CF97.b = @CF0E.b * @(CF94).b		// initialize player bonus points
+ROMC:5226 LET @CF96.b = @CF1C.b * @(CF94).b -- @CF97.b + @CF96.b
+// set chance = enemyDS * bonusRate -- playerBonus + baseChance
+ROMC:5231 RETURN
+
+
+// PROGRAM FIVE?
+// main battle logic
+ROMC:5232 IF 0x00 = @FF8B.b
+ROMC:5238 GOTO 5377
+ROMC:523B GOSUB 6812								// get individual ID => @CF11.w
+ROMC:523E LET @D90C.b = 0x5B					// set message : ^
+ROMC:5244 IF 0x00 = @D802.b
+ROMC:524A GOTO 5250
+ROMC:524D SYS 0020									// print message
+ROMC:5250 GOSUB 67E0								// get individual status => @CF06.b
+ROMC:5253 LET @CF32.w = 0x03
+ROMC:5258 GOSUB 6E94						// get pointer to individual status => @CF32.w
+ROMC:525B LET @CF13.w = @(CF32).w
+ROMC:5260 LET @CF32.w = @CF32.w + 0x02
+ROMC:5267 LET @CF15.b = @(CF32).b
+ROMC:526C IF @CF15.b >= 0x08
+ROMC:5271 GOTO 5294
+ROMC:5274 IF @CF13.w >= 0x010E
+ROMC:527A GOTO 5294
+ROMC:527D GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:5280 IF @CF1A.b > 0x00
+ROMC:5285 GOTO 5294
+ROMC:5288 LET @CF13.w = 0xFF
+ROMC:528D INC @CF32.w
+ROMC:528F LET @(CF32).b = 0xFF
+ROMC:5294 LET @CF34.w = @CF13.w * 0x08 + 0x6F83
+ROMC:529E LET @CF23.b = @(CF34).b
+ROMC:52A3 GOSUB 67B4
+ROMC:52A6 GOSUB 67C4
+ROMC:52A9 GOSUB 691A
+ROMC:52AC GOSUB 69E1
+ROMC:52AF LET @D906.w = @CF12.b
+ROMC:52B5 LET @D908.w = @CF13.w
+ROMC:52BB GOSUB 6E57
+ROMC:52BE LET @CFA0.w = @CF23.b * 0x02 + 0x53E1
+ROMC:52C8 LET @CFA0.w = @(CFA0).w
+ROMC:52CD GOSUB @CFA0
+ROMC:52CF IF 0xFF = @D50A.b
+ROMC:52D5 GOTO 52D9
+ROMC:52D8 END
+
+ROMC:52D9 IF @CFC0.b > 0x00
+ROMC:52DE GOTO 535A
+ROMC:52E1 LET @CF0A.w = @D541.w
+ROMC:52E7 LET @CF0A.w = @D50C.w - @CF0A.w
+ROMC:52EF LET @CF60.b = 0x00
+ROMC:52F4 LET @CF30.w = 0xCFCB + @CF60.b
+ROMC:52FC IF @(CF30).b = 0x00
+ROMC:5301 GOTO 530E
+ROMC:5304 INC @CF60.b
+ROMC:5306 IF @CF60.b <= 0x03
+ROMC:530B GOTO 52F4
+ROMC:530E LET @CF30.w = @CF60.b * 0x02 + 0xCFC3
+ROMC:5318 LET @(CF30).w = @(CF30).w + @CF0A.w
+ROMC:531F IF @(CF30).w > 0x03E8
+ROMC:5325 GOTO 5330
+ROMC:5328 LET @D541.w = @D50C.w
+ROMC:532F END
+
+ROMC:5330 LET @D90C.b = 0x6B							// set message : Destroyed Cannon$AMOUNT!
+ROMC:5336 LET @D900.w = @CF60.b + 0x01		// set message variable :
+ROMC:533E SYS 0020											// print message
+ROMC:5341 LET @CF30.w = 0xCFCB + @CF60.b
+ROMC:5349 LET @(CF30).b = 0x01
+ROMC:534E INC @CFCF.b
+ROMC:5350 IF @CFCF.b > 0x03
+ROMC:5355 INC @CFC0.b
+ROMC:5357 GOTO 5328
+ROMC:535A IF @CFC0.b > 0x01
+ROMC:535F GOTO 5376
+ROMC:5362 LET @CF0A.w = @D541.w
+ROMC:5368 IF @CF0A.w > 0x1388
+ROMC:536E GOTO 5376
+ROMC:5371 LET @CFC0.b = 0x02
+ROMC:5376 END
+
+// called from beginning of Program Five IF 0x00 = @FF8B.b
+ROMC:5377 IF @CFF0.w <= 0xFF					// valid item ID
+ROMC:537C GOTO 5388
+ROMC:537F IF 0x03 = @C2FC.b					// no move
+ROMC:5385 GOTO 53DB					// next attacker?
+ROMC:5388 LET @CF12.b = @CFF3.b * 0x02					// get player ID for bitshift, used in partyOrder
+ROMC:538F GOSUB 6DD0					// get player data offset from party order => @CFD0.b
+ROMC:5392 LET @CF94.b = @CFD0.b				// set player offset
+ROMC:5397 LET @CF12.b = @CFF2.b * 0x02
+ROMC:539E GOSUB 6DD0					// get player data offset from party order => @CFD0.b
+ROMC:53A1 LET @CF88.b = @CFD0.b				// set player offset
+ROMC:53A6 LET @CF34.w = @CFF0.w * 0x08 + 0x6F83	// set item effect offset
+ROMC:53B0 LET @CF23.b = @(CF34).b			// set item effect
+ROMC:53B5 LET @CF34.w = @CFF0.w * 0x08 + 0x6F84		// set item effect modifier/parameter offset
+ROMC:53BF LET @CF24.b = @(CF34).b			// set item modifier/parameter
+ROMC:53C4 LET @CFF4.b = 0x00					// set ???
+ROMC:53C9 LET @CFA0.w = @CF23.b * 0x02 + 0x5445		// set item script/subroutine offset
+ROMC:53D3 LET @CFA0.w = @(CFA0).w
+ROMC:53D8 GOSUB @CFA0						// run item subroutine
+ROMC:53DA END
+
+ROMC:53DB LET @CFF4.b = 0x09
+ROMC:53E0 END
+
+///////////////////////////////////////////////////////////////////////////
+// START Table of offsets
+// ROMC:53E1 - 5458 == @313E1 - 31458
+// item effects (60 of them? officially listed only 49)
+
+00	55ED	5918	5947	545A	03
+04	5463	5488	54AD	54B6	07
+08	5509	6219	554C	62A4	0B
+0C	555C	556C	562A	5649	0F
+10	566B	5695	56B7	5751	13
+14	57BE	57D6	5826	585F	17
+18	5884	58D4	5968	59BD	1B
+1C	5A11	5A3E	5AC0	5B26	1F
+20	5BAF	5C0D	5C78	5CA9	23
+24	5D57	5D9B	5DE1	5DEC	27
+28	5E22	62ED	5E93	5EF8	2B
+2C	5F10	5F1C	5F46	60D0	2F
+30	5F98	5512	658A	65DE	33
+34	65FF	6619	66B9	66BF	37
+38	66C7	66CD	6700	6730	3B
+
+// END Table of offsets
+///////////////////////////////////////////////////////////////////////////
+
+// item effect 03 : no move
+ROMC:545A LET @D90C.b = 0x17				// set message : ^$CHAR did nothing.^
+ROMC:5460 GOTO 6CD4								// print message and return
+
+// item effect 04 : Paralyzed (teleport, blank)
+ROMC:5463 LET @D90C.b = 0x18					// set message : ^$CHAR is^Paralyzed.
+ROMC:5469 SYS 0020									// print message
+ROMC:546C IF RANDOM(0x64) <= @CF24.b	// if random(100) <= item data 5th byte
+ROMC:5471 GOTO 5475								// release from paralysis
+ROMC:5474 RETURN
+
+// release from paralysis
+ROMC:5475 LET @CF06.b = @CF06.b AND 0xFD	// remove paralysis from attacker's status
+ROMC:547C GOSUB 67F8						// set individual status
+ROMC:547F LET @D90C.b = 0x4F			// set message : ^Released from^paralysis.
+ROMC:5485 GOTO 6CD4						// print message and end program
+
+// item effect 05 : sleeping (tent, blank)
+ROMC:5488 LET @D90C.b = 0x1A		//  set message : ^$CHAR is^sleeping.
+ROMC:548E SYS 0020							// print message
+ROMC:5491 IF RANDOM(0x64) <= @CF24.b		// if random(100) <= item data 5th byte
+ROMC:5496 GOTO 549A						// Wake up
+ROMC:5499 RETURN
+
+// Wake up from sleep
+ROMC:549A LET @CF06.b = @CF06.b AND 0xFE	// remove sleep from attacker's status
+ROMC:54A1 GOSUB 67F8						// set individual status
+ROMC:54A4 LET @D90C.b = 0x50		// set message : ^Woke up.
+ROMC:54AA GOTO 6CD4						// print message and end program
+
+// item effect 06 : shield, defend
+// set message
+ROMC:54AD LET @D90C.b = 0x1C		// set message : ^$CHAR is^defending with^$ITEM.
+ROMC:54B3 GOTO 6CD4						// print message and return
+
+// item effect 07 : elemental shield
+ROMC:54B6 GOSUB 54AD						// print ^$CHAR is^defending with^$ITEM.
+ROMC:54B9 GOSUB 6BF8						// sound effect, attacker's item
+ROMC:54BC IF @CF12.b > 0x04			// if attacker group ID is not party
+ROMC:54C1 GOTO 54F2						// cover the enemies
+ROMC:54C4 IF @CF15.b = 0x09			// if target is opposing team
+ROMC:54C9 GOTO 54FA						// cover the enemies
+ROMC:54CC GOSUB 6E5E						// initialize loop thru party members
+ROMC:54CF LET @D90C.b = 0x1D		// set message : ^Barrier covered^the Party.
+ROMC:54D5 SYS 0020							// print message
+ROMC:54D8 GOSUB 6E84						// set high byte of ptr to target player
+ROMC:54DB LET @CF30.b = 0x2D		// pointer to party member's elemental resistance
+ROMC:54E0 LET @(CF30).b = @(CF30).b OR @CF24.b	// add shield element to member's resistance
+ROMC:54E7 INC @CF15.b					// increment loop counter of party ID
+ROMC:54E9 IF @CF15.b <= @CF01.b	// if loop counter < party size
+ROMC:54EE GOTO 54D8						// continue loop
+ROMC:54F1 RETURN
+
+// from elemental shield, cover the Enemies
+ROMC:54F2 IF @CF15.b = 0x09		// if target is opposing team
+ROMC:54F7 GOTO 54CC					// return to elemental shield main program
+ROMC:54FA GOSUB 6E67					// initialize loop thru monsters
+ROMC:54FD LET @D90C.b = 0x1E	// set message : ^Barrier covered^the Enemies.
+ROMC:5503 SYS 0020						// print message
+ROMC:5506 GOTO 54D8					// retarn to elemental shield main program
+
+// item effect 08 : counter-attack
+// set message
+ROMC:5509 LET @D90C.b = 0x1F		// set message : ^$CHAR is^waiting for^the attack.
+ROMC:550F GOTO 6CD4					// print message and return
+
+// item effect 31 : physical attack
+ROMC:5512 GOSUB 6572					// check if item hit success, end if failed
+ROMC:5515 GOSUB 69EF					// if target is CURS, halve target's DEF
+ROMC:5518 GOSUB 6DE7					// check target's DEF Magi, raise DEF
+ROMC:551B GOSUB 6A32					// get item damage - armor
+ROMC:551E GOSUB 6A98					// get target's element resistance => @CFA6.b
+ROMC:5521 IF @CF74.w > 0x00		// if damage > 0
+ROMC:5526 GOTO 552F					// incur damage to target, end program
+ROMC:5529 GOSUB 6C93					// else no damage
+ROMC:552C GOTO 635F					// execute counterattacks, end program
+
+// incur damage to target, melee
+ROMC:552F GOSUB 6BF8					// sound effect, attacker's item
+ROMC:5532 GOSUB 6B55					// play animation on target
+ROMC:5535 GOSUB 6C2B					// set message strings
+ROMC:5538 GOSUB 694E					// change target HP and check if just died => @CF76.b dead flag
+ROMC:553B IF @CF76.b = 0x00		// if target still alive
+ROMC:5540 GOTO 635F					// execute counterattacks
+ROMC:5543 LET @D90C.b = 0x24		// set message : ^$CHAR fell.
+ROMC:5549 GOTO 6CD4					// print message and return
+
+// item effect 0A : elemental melee attack (e.g. flame sword)
+ROMC:554C GOSUB 685D							// get element weakness at 0xDn2E => @CFA7.b
+ROMC:554F IF 0x00 = @CFA7.b AND @CF25.b		// if not weak against element
+ROMC:5556 GOTO 5512					// Normal melee attack
+ROMC:5559 GOTO 62ED					// else, weak does Critical damage
+
+// item effect 0C : melee attack, hit weakness race/species type
+ROMC:555C GOSUB 69A4
+ROMC:555F IF @CF25.b = @CFA9.b AND 0xF0
+ROMC:5566 GOTO 62ED					// Critical damage
+ROMC:5569 GOTO 5512					// Normal melee attack
+
+// item effect 0D : absorb HP
+ROMC:556C GOSUB 6572					// check if item hit success
+ROMC:556F GOSUB 686B					// get attacker's MANA, including Magi
+ROMC:5572 GOSUB 6ECD					// set magic offense => @CF74.w
+ROMC:5575 GOSUB 69A4					// get target's type/class => @CFA9.b
+ROMC:5578 IF @CF25.b = @CFA9.b AND 0xF0	// if type == item data 6th byte (undead)
+ROMC:557F GOTO 55B9					// reverse absorb
+ROMC:5582 GOSUB 6BF8					// sound effect, attacker's item
+ROMC:5585 GOSUB 6B55					// play animation on target
+ROMC:5588 GOSUB 6C2B					// print damages to target
+ROMC:558B GOSUB 694E					// change target HP
+ROMC:558E IF @CFA9.b >= 0x20		// if attacker's species is >= 0x20 (Tororo)
+ROMC:5593 GOTO 55A2					// asborb HP
+ROMC:5596 LET @D90C.b = 0x25		// set message : ^Cannot absorb HP^from $CHAR.
+ROMC:559C SYS 0020						// print message
+ROMC:559F GOTO 55AE					// check target dead or alive
+
+// asborb HP
+ROMC:55A2 GOSUB 6CD8					// raise attacker HP
+ROMC:55A5 LET @D90C.b = 0x26	// set message : ^Absorbed $AMOUNT HP.
+ROMC:55AB SYS 0020						// print message
+ROMC:55AE IF @CF76.b = 0x00		// if target = alive
+ROMC:55B3 GOTO 635F					// execute counter-attacks
+ROMC:55B6 GOTO 5543					// else targe = dead. set message : ^$CHAR fell. ; end program
+
+// reverse absorb
+ROMC:55B9 LET @D90C.b = 0x27			// set message : ^$CHAR has more^power to absorb^than $ITEM!
+ROMC:55BF SYS 0020							// print message
+ROMC:55C2 GOSUB 68D4						// update attacker HP after counter-attack => @CFB5.w HP.lost
+ROMC:55C5 GOSUB 6A6D						// get pointer to target individual's current HP => @CF32.w
+ROMC:55C8 LET @(CF32).w = @(CF32).w + @CFB5.w	// HP.gained
+ROMC:55CF GOSUB 6A76						// recover HP, but no more than max HP
+ROMC:55D2 LET @D900.w = @CFB5.w	// set message variable : $Amount HP
+ROMC:55D8 LET @D90C.b = 0x28		// set message : ^$AMOUNT HP stolen.
+ROMC:55DE SYS 0020							// print message
+ROMC:55E1 IF @CF08.w > 0x00			// if amount of attacker's lives > 0
+ROMC:55E6 RETURN								// end program
+ROMC:55E7 GOSUB 6C7B						// group destroyed
+ROMC:55EA GOTO 68B7						// set STUN and decrement lives; end program
+
+// item effect 00, 09 : cure all party. heal staff
+ROMC:55ED GOSUB 6C60		// print message : ^$CHAR used^$ITEM for^$CHAR.
+ROMC:55F0 GOSUB 686B		// get target's MANA, including Magi => @CFAC.b
+ROMC:55F3 GOSUB 6891		// get attacker's MANA, including Magi => @CFA4.b
+ROMC:55F6 GOSUB 6EE8		// calculate HP + some randomness => @CFB5.w
+ROMC:55F9 GOSUB 6BF8		// sound effect
+ROMC:55FC GOSUB 6BCB		// play animation
+ROMC:55FF GOSUB 6E45		// print $Target recovered $Amount HP.
+ROMC:5602 GOSUB 6A5A		// set max lives => @CF03.b = @Dn00
+ROMC:5605 GOSUB 67EC		// set target individual's status => @CF07.b
+ROMC:5608 IF 0x00 < @CF07.b AND 0x90		// target is dead
+ROMC:560F GOTO 561F		// advance to next life in group
+ROMC:5612 GOSUB 6A6D		// target is alive, get current HP => @CF32.w
+ROMC:5615 LET @(CF32).w = @(CF32).w + @CFB5.w		// recover HP
+ROMC:561C GOSUB 6A76
+// check if continue or break loop
+ROMC:561F INC @CF16.b					// temp max lives?
+ROMC:5621 IF @CF16.b < @CF03.b		// more lives left in group
+ROMC:5626 GOTO 5605						// continue loop
+ROMC:5629 RETURN								// break item effect
+
+//  item effect 0E : AGL-damage weapons
+ROMC:562A GOSUB 6572			// check if item hit success
+ROMC:562D GOSUB 69EF			// check if target is CURS
+ROMC:5630 GOSUB 6DE7			// check target's DEF Magi, raise DEF
+ROMC:5633 LET @CFB8.b = RANDOM(@CFAB.b)		// random(attacker.AGL)
+ROMC:5638 GOSUB 6E8C			// get target's armor
+ROMC:563B LET @CF74.w = @CFAB.b * @CF24.b + @CFB8.b -- @CF74.w		// damage = attacker.AGL * item.multiplier + random(attacker.AGL) -- target.armor
+ROMC:5646 GOTO 551E			// resolve damage and end item effect
+
+//  item effect 0F : MANA-damage weapons
+ROMC:5649 GOSUB 6572			// check if item hit success
+ROMC:564C GOSUB 69EF			// check if target is CURS
+ROMC:564F GOSUB 6DE7			// check target's DEF Magi, raise DEF
+ROMC:5652 GOSUB 686B			// get attacker's MANA, including Magi
+ROMC:5655 LET @CFB8.b = RANDOM(@CFAC.b)		// random(attacker.MANA)
+ROMC:565A GOSUB 6E8C			// get target's armor
+ROMC:565D LET @CF74.w = @CFAC.b * @CF24.b + @CFB8.b -- @CF74.w		// damage = attacker.MANA * item.multiplier + random(attacker.MANA) -- target.armor
+ROMC:5668 GOTO 551E			// resolve damage and end item effect
+
+// item effect 10 : STR-based group attack, never miss, minimum damage (e.g. Xcalibur)
+ROMC:566B GOSUB 6C43						// print message based on group size
+ROMC:566E GOSUB 684F						// get target's element resistance => @CFA6.b
+ROMC:5671 IF @CF25.b > @CFAA.b		// if item data 6th byte > attacker's STR
+ROMC:5676 LET @CFAA.b = @CF25.b	// attacker STR = item data
+ROMC:567B GOSUB 6A32						// calculate item damage - armor
+ROMC:567E GOSUB 6A89						// weapon resistance
+ROMC:5681 IF @CF74.w = 0x00			// if damage == 0
+ROMC:5686 GOTO 5692						// print no damage and end program
+ROMC:5689 GOSUB 6BF8						// sound effect, attacker's item
+ROMC:568C GOSUB 6B55						// play animation on target
+ROMC:568F GOTO 64E7						// incur damage to entire group; end program
+
+// print no damage and return
+ROMC:5692 GOTO 6C93			// print no damage and return
+
+// item effect 11 : melee static damage, never miss (e.g. glass)
+ROMC:5695 GOSUB 6C3A				// print ^$CHAR attacks^$CHAR with^$ITEM.
+ROMC:5698 GOSUB 6905				// find first alive member in group
+ROMC:569B LET @CF74.w = RANDOM(@CFAA.b) + @CF24.w	// set damage = random(attacker.STR) + item.5thbyte
+ROMC:56A2 GOSUB 6BF8				// sound effect, attacker's item
+ROMC:56A5 GOSUB 6B55				// play animation on target
+ROMC:56A8 GOSUB 6C2B				// print damages to target
+ROMC:56AB GOSUB 694E				// change target HP
+ROMC:56AE IF @CF76.b = 0x00	// if target = alive
+ROMC:56B3 RETURN						// end program
+ROMC:56B4 GOTO 5543				// print target fell. end program
+
+// item effect 12 : instant kill (e.g. chainsaw)
+ROMC:56B7 GOSUB 6C3A				// print ^$CHAR attacks^$CHAR with^$ITEM.
+ROMC:56BA GOSUB 6905				// find first alive member in group
+ROMC:56BD GOSUB 69C3				// get defender's item ID
+ROMC:56C0 GOSUB 69D1				// get defender item data, 2nd byte => @CFB0.b
+ROMC:56C3 IF 0x00 = @CFB0.b AND 0x08	// if not block melee
+ROMC:56CA GOTO 56E7				// check attack missed
+ROMC:56CD GOSUB 6823				// get defender item data, 6th byte => @CFB2.b
+ROMC:56D0 IF RANDOM(0x64) > @CFB2.b	// if random(100) > item.6thbyte
+ROMC:56D5 GOTO 56E7				// check attack missed
+ROMC:56D8 LET @D906.w = @CF17.w		// set message variable : defender's item name
+ROMC:56DE LET @D90C.b = 0x2C			// set message : ^$CHAR defended^against$ITEM^with $ITEM.
+ROMC:56E4 GOTO 6CD4							// print message and return
+
+// check attack missed for instant kill (saw)
+ROMC:56E7 IF RANDOM(0x64) <= @CF24.b + @CFAA.b	// if random(100) <= item.5thbyte + attacker.STR
+ROMC:56EE GOTO 5700						//
+ROMC:56F1 LET @FFB2.b = 0x15			// play sound effect
+ROMC:56F7 LET @D90C.b = 0x21			// set message : ^Missed!
+ROMC:56FD GOTO 6CD4						// print message and return
+
+// instant kill attempt passed
+ROMC:5700 GOSUB 69EF						// check if target is CURS
+ROMC:5703 LET @CF74.w = @CF25.b + @CFAA.b	// set damage = item.6thbyte + attacker.STR
+ROMC:570A GOSUB 6A98						// halve damage from blocking and weapon resistance
+ROMC:570D GOSUB 6DE7						// check target's DEF Magi, raise DEF
+ROMC:5710 IF @CF74.b > @CFA5.b		// if damage > target's DEF
+ROMC:5715 GOTO 5727						// target was cut
+ROMC:5718 LET @FFB2.b = 0x08			// sound effect
+ROMC:571E LET @D90C.b = 0x2D		// set message : ^Too hard to cut^with $ITEM.
+ROMC:5724 GOTO 6CD4						// print message and return
+
+// cut target
+ROMC:5727 GOSUB 69B5					// get target's species => @CFA8.b
+ROMC:572A IF @CFA8.b >= 0xF8		// if species >= boss (Ashura)
+ROMC:572F GOTO 5718					// print too hard to cut; return
+ROMC:5732 GOSUB 6BF8					// sound effect, attacker's item
+ROMC:5735 GOSUB 6B55					// play animation on target
+ROMC:5738 LET @D90C.b = 0x2E		// set message : ^$CHAR was cut.
+ROMC:573E SYS 0020						// print message
+ROMC:5741 GOSUB 6A6D					// get pointer to target individual's current HP => @CF32.w , Dn41
+ROMC:5744 LET @CF0A.w = 0x00	// initialize temp current HP
+ROMC:5749 LET @(CF32).w = @CF0A.w	// set HP = 0
+ROMC:574E GOTO 6969					// check if target dead and return
+
+// item effect 13 : Gun, single target range attack
+ROMC:5751 GOSUB 6C3A		// message : ^$CHAR attacks^$CHAR with^$ITEM.
+ROMC:5754 GOSUB 6905		// find first alive member in group
+ROMC:5757 GOSUB 6DC2		// get attacker's race => @CF89.b
+ROMC:575A LET @CF89.b = @CF89.b -- 0x02 + 0x01		// set attacker.RACEBONUS = Robot ? 2 : 1
+ROMC:5763 LET @CFB3.b = @CFAA.b * @CF89.b + @CF25.b		// set hit chance = attacker.STR * attacker.RACEBONUS + item.Chance
+ROMC:576C IF RANDOM(0x64) <= @CFB3.b			// if random(100) <= chance
+ROMC:5771 GOTO 5777				// success and return
+ROMC:5774 GOTO 56F1				// fail, print miss, and end program
+
+// resolve ranged attack damage
+ROMC:5777 GOSUB 69EF		// check if target is CURS
+ROMC:577A GOSUB 69C3		// get defender's item ID => @CF17.w
+ROMC:577D GOSUB 69D1		// get defender item data, 2nd byte: => @CFB0.b
+ROMC:5780 GOSUB 6823		// get defender item data, 5th byte: => @CFB2.b
+ROMC:5783 GOSUB 6DE7		// check target's DEF Magi, raise DEF => @CFA5.b
+ROMC:5786 LET @CFB8.b = RANDOM(@CF25.b) * @CF89.b		// set damage.bonus = random(attacker.item.6thbyte) * attacker.RACEBONUS
+ROMC:578D GOSUB 6E8C		// get target's armor => @CF74.w
+ROMC:5790 LET @CF74.w = @CF24.b * 0x05 + @CFB8.b -- @CF74.w		// set damage = item.multiplier * 5 + damage.bonus -- target.armor
+ROMC:579B GOSUB 6A98		// halve damage from blocking and weapon resistance
+ROMC:579E IF @CF74.w > 0x00		// if final damage > 0
+ROMC:57A3 GOTO 57A9					// convert damage to HP loss
+ROMC:57A6 GOTO 6C93					// no damage. play sound, print message, end program
+
+// convert ranged final damage to HP loss
+ROMC:57A9 GOSUB 6BF8			// sound effect, attacker's item
+ROMC:57AC GOSUB 6B55			// play animation on target
+ROMC:57AF GOSUB 6C2B			// message : $Amount damages to $Target.
+ROMC:57B2 GOSUB 694E			// change target HP and check if just died => @CF76.b dead flag
+ROMC:57B5 IF @CF76.b = 0x00		// if target still alive, return
+ROMC:57BA RETURN
+ROMC:57BB GOTO 5543			// target died, print message, end program
+
+// item effect 14 : Bow, single target range attack
+ROMC:57BE GOSUB 6C3A		// print message : ^$CHAR attacks^$CHAR with^$ITEM.
+ROMC:57C1 GOSUB 6905		// find first alive member in group
+ROMC:57C4 GOSUB 69FE		// update attacker's AGL from Magi => @CFAB.b
+ROMC:57C7 LET @CFB3.b = @CFAB.b * 0x02 + @CF25.b		// set hit chance = attacker.AGL * 2 + item.Chance
+ROMC:57D0 GOTO 576C		// resolve ranged attack and end program
+
+
+ROMC:57D3 GOTO 56F1		// fail, print miss, and end program
+
+
+// item effect 15 : group range attack
+ROMC:57D6 GOSUB 6C43		// print message based on group size
+ROMC:57D9 GOSUB 6DC2		// get attacker race => @CF89.b
+ROMC:57DC LET @CF89.b = @CF89.b -- 0x02 + 0x01	// set RACEBONUS = Robot? 2 : 1
+ROMC:57E5 LET @CF32.w = @CF15.b * 0x0100 + 0xD02D // set pointer = target's element resistance Dn2D
+ROMC:57F0 LET @CFA6.b = @(CF32).b		// get target's element resistance
+ROMC:57F5 GOSUB 6DE7		// check target's DEF Magi, raise DEF
+ROMC:57F8 LET @CFB8.b = RANDOM(@CF24.b) / 0x02 * @CF89.b	// set bonus damage = random(item.5thbyte) / 2 * RACEBONUS
+ROMC:5801 GOSUB 6E8C		// get target's armor => @CF74.w
+ROMC:5804 LET @CF74.w = @CF24.b * 0x05 + @CFB8.b -- @CF74.w // set damage = item.5thbyte * 5 + damage.bonus
+ROMC:580F GOSUB 6A89		// weapon resistance
+ROMC:5812 IF @CF74.w = 0x00	// if no damage
+ROMC:5817 GOTO 5823		// print no damage and end program
+ROMC:581A GOSUB 6BF8		// sound effect, attacker's item
+ROMC:581D GOSUB 6B55		// play animation on target
+ROMC:5820 GOTO 64E7		// incur damage to entire group and end program
+
+// no damage
+ROMC:5823 GOTO 6C93		// print no damage and return
+
+// item effect 16 : range attack, no defense (laser gun)
+ROMC:5826 GOSUB 6C3A		// print ^$CHAR attacks^$CHAR with^$ITEM.
+ROMC:5829 GOSUB 6905		// find first alive member in group
+ROMC:582C GOSUB 69FE		// update attacker's AGL
+ROMC:582F LET @CFB3.b = @CF25.b + @CFAB.b		// set chance = item.6thbyte + attacker.AGL
+ROMC:5836 GOTO 583C		// laser gun damage
+
+
+ROMC:5839 GOTO 56F1
+
+// laser gun damage
+ROMC:583C LET @CFB8.b = RANDOM(@CF25.b)	// set bonus damage = random(item.6thbyte)
+ROMC:5841 LET @CF74.w = @CF24.b * 0x05 + @CFB8.b	// set damage = item.5thbyte * 5 + damage.bonus
+ROMC:584A GOSUB 6BF8				// sound effect, attacker's item
+ROMC:584D GOSUB 6B55				// play animation on target
+ROMC:5850 GOSUB 6C2B				// print damages to target
+ROMC:5853 GOSUB 694E				// change target HP
+ROMC:5856 IF @CF76.b = 0x00	// if target = alive
+ROMC:585B RETURN						// end program
+ROMC:585C GOTO 5543				// print target fell. end program
+
+// item effect 17 : all enemies, no defense, unblockable attack, static damage (e.g. nukebomb)
+ROMC:585F LET @CF74.w = RANDOM(@CF25.b) + @CF24.b * 0x02	// set damage
+ROMC:5868 GOSUB 6546						// initialize loop for all party or monsters
+ROMC:586B GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:586E IF @CF1A.b = 0x00			// if no lives left
+ROMC:5873 GOTO 5879						// advance loop
+ROMC:5876 GOSUB 64E7						// incur damage to group
+ROMC:5879 INC @CF15.b					// increment loop counter for target group ID
+ROMC:587B IF @CF15.b <= @CF01.b	// if target group ID <= max group ID
+ROMC:5880 GOTO 586B						// continue loop
+ROMC:5883 RETURN
+
+// item effect 18 : Whip, STR-based melee attack, stop enemy for turn
+ROMC:5884 GOSUB 6572				// check if item hit success
+ROMC:5887 GOSUB 69EF				// check if target is CURS
+ROMC:588A GOSUB 6DE7				// check target's DEF Magi, raise DEF
+ROMC:588D GOSUB 6A32				// get item damage - armor
+ROMC:5890 GOSUB 6A98				// get target's element resistance => @CFA6.b
+ROMC:5893 IF @CF74.w > 0x00	// if damage > 0
+ROMC:5898 GOTO 589E				// apply damage and winding, then end program
+ROMC:589B GOTO 6C93				// else no damage, end program
+
+// from whip
+ROMC:589E GOSUB 6BF8			// sound effect, attacker's item
+ROMC:58A1 GOSUB 6B55			// play animation on target
+ROMC:58A4 GOSUB 6C2B			// print message : ^$AMOUNTdamages to^$CHAR.
+ROMC:58A7 GOSUB 694E			// change target HP; flag dead => @CF76.b
+ROMC:58AA IF @CF76.b = 0x00	// if target not dead
+ROMC:58AF GOTO 58B5			// check whip winding; end program
+ROMC:58B2 GOTO 5543			// print 'target fell'; end program
+
+// check whip winding
+ROMC:58B5 IF RANDOM(0x64) <= @CF25.b	// if random(100) <= item data 6th byte
+ROMC:58BA GOTO 58BE			// whip winding success
+ROMC:58BD RETURN				// else end program
+
+// whip winding success
+ROMC:58BE LET @CF32.w = 0x03		// set low byte to pointer to target's status
+ROMC:58C3 GOSUB 6EA5			// set pointer to target's individual data => @CF32.w ;  Dn43
+ROMC:58C6 LET @(CF32).w = 0xFF		// set target's current item = 0xFF = no move
+ROMC:58CB LET @D90C.b = 0x30			// set message : ^Winded the whip.
+ROMC:58D1 GOTO 6CD4						// print message and return
+
+// item effect 19 : hyper
+ROMC:58D4 GOSUB 58E0
+ROMC:58D7 IF @CFB7.b > 0x00			// if kills > 0
+ROMC:58DC RETURN							// end program
+ROMC:58DD GOTO 6C84			// play sound effect, nothing happened, end program.
+
+// from item effect 19
+ROMC:58E0 GOSUB 6546						// initialize loop for all party or monsters
+ROMC:58E3 GOSUB 6763						// get target's number of lives => @CF14.b
+ROMC:58E6 IF @CF1A.b = 0x00			// if lives = 0
+ROMC:58EB GOTO 590D						// increment and continue loop
+ROMC:58EE GOSUB 6E84						// set high byte of ptr to target => CF31.b
+ROMC:58F1 LET @CF30.b = 0x0A			// set target's stats = Dn0A species
+ROMC:58F6 LET @CF1B.b = @(CF30).b	// get species
+ROMC:58FB IF @CF1B.b > @CF24.b		// if species > item data 5th byte
+ROMC:5900 GOTO 590D						// increment and continue loop
+ROMC:5903 GOSUB 6763						// get target's number of lives => @CF14.b, @CF30.w
+ROMC:5906 LET @(CF30).b = 0x00		// set target group's current lives = 0
+ROMC:590B INC @CFB7.b					// increment kill counter
+ROMC:590D INC @CF15.b					// increment loop counter for target group ID
+ROMC:590F IF @CF15.b <= @CF01.b	// if target group ID <= max group ID
+ROMC:5914 GOTO 58E3						// continue loop
+ROMC:5917 RETURN
+
+// item effect 01 : Cure potion
+ROMC:5918 GOSUB 6C60				// print ^$CHAR used^$ITEM for^$CHAR.
+ROMC:591B GOSUB 6905				// find first alive member in group
+ROMC:591E LET @CF74.w = RANDOM(@CF25.b) + @CF24.b		// set HP change = random(item.6thbyte) + item.5thbyte
+ROMC:5925 GOSUB 6A6D				// get pointer to target individual's current HP
+ROMC:5928 LET @CF0A.w = @(CF32).w	// get current HP
+ROMC:592D LET @(CF32).w = @(CF32).w + @CF74.w	// HP = HP.old + HP.change
+ROMC:5934 GOSUB 6A76				// recover HP, but no more than max HP
+ROMC:5937 LET @CFB5.w = @(CF32).w - @CF0A.w	// set HP.changed
+ROMC:593E GOSUB 6BF8				// sound effect, attacker's item
+ROMC:5941 GOSUB 6BCB				// check criteria to play item animation
+ROMC:5944 GOTO 6E45				// print $Target recovered $Amount HP.
+
+// item effect 02 : heal ailment potion
+ROMC:5947 GOSUB 6C60			// print ^$CHAR used^$ITEM for^$CHAR.
+ROMC:594A GOSUB 6905			// find first alive member in group
+ROMC:594D GOSUB 67EC			// set target individual's status => @CF07.b
+ROMC:5950 LET @(CF32).b = @CF07.b AND @CF24.b	// remove status ailment matching item
+ROMC:5957 LET @CF76.b = @CF07.b XOR @(CF32).b	// set ailments removed flag
+ROMC:595E GOSUB 6BF8			// sound effect, attacker's item
+ROMC:5961 GOSUB 6BCB			// check criteria to play item animation
+ROMC:5964 GOSUB 6D0C			// print each ailment healed
+ROMC:5967 RETURN
+
+// item effect 1A : MANA-based elemental group attack (fire)
+ROMC:5968 GOSUB 6C43			// print message based on group size
+ROMC:596B GOSUB 6CA2			// reflect magic
+ROMC:596E GOSUB 686B			// get attacker's MANA, including Magi
+ROMC:5971 GOSUB 684F			// get target's element resistance
+ROMC:5974 IF 0x00 < @CFA6.b AND @CF25.b	// if target resists element(s)
+ROMC:597B GOTO 59B7			// print elemental resistance and end program
+ROMC:597E GOSUB 685D			// get target enemy's element weakness
+ROMC:5981 GOSUB 6891			// get target's MANA, including Magi
+ROMC:5984 IF 0x00 = @CFA7.b AND @CF25.b	// if target not weak against element
+ROMC:598B GOTO 599D			// skip weakness parts
+ROMC:598E LET @CFA4.b = 0x00	// reset target's MANA = 0
+ROMC:5993 LET @CFAC.b = @CFAC.b + 0x05	// set attacker MANA += 5
+ROMC:599A GOSUB 6C72			// print message ^$CHAR is weak^against $ITEM.
+ROMC:599D GOSUB 6E00			// aegis/elemental magi bonus to defense/resistance
+ROMC:59A0 GOSUB 6A46			// magic damage formula
+ROMC:59A3 IF @CF74.w = 0x00	// if damage = 0
+ROMC:59A8 GOTO 59B4			// print no damage and end program
+ROMC:59AB GOSUB 6BF8			// sound effect, attacker's item
+ROMC:59AE GOSUB 6B55			// play animation on target
+ROMC:59B1 GOTO 64E7			// incur damage to entire group
+
+// print no damage, return
+ROMC:59B4 GOTO 6C93			// print no damage, return
+
+// print elemental resistance
+ROMC:59B7 GOSUB 6C69		// print target is strong against item.
+ROMC:59BA GOTO 6C84		// print nothing happened.
+
+// item effect 1B : bestow status ailments (paralyze)
+ROMC:59BD GOSUB 6C43
+ROMC:59C0 GOSUB 6CA2
+ROMC:59C3 GOSUB 684F
+ROMC:59C6 IF 0x00 < @CFA6.b AND @CF25.b
+ROMC:59CD GOTO 59B7
+ROMC:59D0 GOSUB 685D
+ROMC:59D3 GOSUB 6891
+ROMC:59D6 GOSUB 686B
+ROMC:59D9 GOSUB 6B36
+ROMC:59DC IF @CFB4.b > RANDOM(0x64)
+ROMC:59E1 GOTO 6C84
+ROMC:59E4 GOSUB 6A5A						// set max lives => @CF03.b = @Dn00
+ROMC:59E7 GOSUB 6996
+ROMC:59EA GOSUB 6D89
+ROMC:59ED INC @CF16.b
+ROMC:59EF IF @CF16.b < @CF03.b
+ROMC:59F4 GOTO 59E7
+ROMC:59F7 GOSUB 6BF8
+ROMC:59FA GOSUB 6B55
+ROMC:59FD GOSUB 6D3B
+ROMC:5A00 IF 0x00 = @CF24.b AND 0x90
+ROMC:5A07 RETURN
+ROMC:5A08 GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:5A0B LET @(CF30).b = 0x00
+ROMC:5A10 RETURN
+
+// item effect 1C : hit weakness race/type only, group (e.g. sunburst)
+ROMC:5A11 GOSUB 6C43
+ROMC:5A14 GOSUB 69A4
+ROMC:5A17 IF @CF25.b = @CFA9.b AND 0xF0
+ROMC:5A1E GOTO 5A24
+ROMC:5A21 GOTO 6C84
+
+
+ROMC:5A24 GOSUB 686B
+ROMC:5A27 GOSUB 6ECD
+ROMC:5A2A IF @CF74.w = 0x00
+ROMC:5A2F GOTO 5A3B
+ROMC:5A32 GOSUB 6BF8
+ROMC:5A35 GOSUB 6B55
+ROMC:5A38 GOTO 64E7
+
+
+ROMC:5A3B GOTO 6C93
+
+// item effect 1D : taijutsu (e.g. punch...karate)
+ROMC:5A3E GOSUB 6C3A					// set message : ^$CHAR attacks^$CHAR with^$ITEM.
+ROMC:5A41 GOSUB 6AAD					// get physical attack hit, miss, or block chance
+ROMC:5A44 IF @CF76.b = 0x01		// if attack blocked
+ROMC:5A49 GOTO 6589					// end program
+ROMC:5A4C GOSUB 6E7C
+ROMC:5A4F LET @CF30.b = 0x0B
+ROMC:5A54 IF @(CF30).b = 0x03
+ROMC:5A59 GOTO 5A7F
+ROMC:5A5C LET @CF32.w = 0x06
+ROMC:5A61 GOSUB 6E94						// get pointer to individual status => @CF32.w
+ROMC:5A64 GOSUB 6E7C
+ROMC:5A67 LET @CF30.b = 0x14
+ROMC:5A6C LET @CF30.w = @(CF32).b * 0x03 + @CF30.w
+ROMC:5A75 LET @CFB9.b = @(CF30).b
+ROMC:5A7A IF @CFB9.b = 0xFE
+ROMC:5A7F LET @CFB9.b = @CF25.b - 0x05
+ROMC:5A86 LET @CF52.b = RANDOM(@CFB9.b)
+ROMC:5A8B IF @CF52.b <= @CFB3.b
+ROMC:5A90 GOTO 5A96
+ROMC:5A93 GOTO 56F1
+
+
+ROMC:5A96 GOSUB 69EF
+ROMC:5A99 GOSUB 6DE7
+ROMC:5A9C LET @CFB8.b = RANDOM(@CFAB.b)
+ROMC:5AA1 GOSUB 6E8C
+ROMC:5AA4 LET @CF74.w = @CF25.b - @CFB9.b * @CF24.b + @CFB8.b -- @CF74.w
+ROMC:5AB1 IF @CFB9.b = 0x01
+ROMC:5AB6 LET @CF74.w = @CF74.w * 0x03
+ROMC:5ABD GOTO 551E
+
+// item effect 1E : multiple hits STR-based damage (e.g. seven, w-attack)
+ROMC:5AC0 GOSUB 6C3A
+ROMC:5AC3 GOSUB 6AAD
+ROMC:5AC6 IF @CF76.b = 0x01
+ROMC:5ACB GOTO 6589
+ROMC:5ACE LET @CF00.b = 0x00
+ROMC:5AD3 LET @CFB7.b = 0x00
+ROMC:5AD8 LET @CF39.w = 0x00
+ROMC:5ADD GOSUB 69EF
+ROMC:5AE0 GOSUB 6DE7
+ROMC:5AE3 IF RANDOM(0x64) > @CFB3.b
+ROMC:5AE8 GOTO 5AFA
+ROMC:5AEB INC @CFB7.b
+ROMC:5AED GOSUB 6A32
+ROMC:5AF0 GOSUB 6A98
+ROMC:5AF3 LET @CF39.w = @CF39.w + @CF74.w
+ROMC:5AFA INC @CF00.b
+ROMC:5AFC IF @CF00.b < @CF25.b
+ROMC:5B01 GOTO 5AE3
+ROMC:5B04 IF @CFB7.b = 0x00
+ROMC:5B09 GOTO 5B23
+ROMC:5B0C LET @CF74.w = @CF39.w
+ROMC:5B11 LET @D900.w = @CFB7.b
+ROMC:5B17 LET @D90C.b = 0x34			// set message : ^Hit $AMOUNT times.
+ROMC:5B1D SYS 0020							// print message
+ROMC:5B20 GOTO 5521
+
+
+ROMC:5B23 GOTO 56F1
+
+// item effect 1F : cause status ailments (e.g. stungun)
+ROMC:5B26 GOSUB 6C3A
+ROMC:5B29 GOSUB 684F
+ROMC:5B2C IF 0x00 < @CFA6.b AND @CF25.b
+ROMC:5B33 GOTO 5B9E
+ROMC:5B36 LET @CF76.b = 0x00
+ROMC:5B3B GOSUB 6A5A						// set max lives => @CF03.b = @Dn00
+ROMC:5B3E GOSUB 67EC						// set target individual's status => @CF07.b
+ROMC:5B41 IF 0x00 = @CF90.b OR @CF24.b AND @CF07.b
+ROMC:5B4A GOTO 5B5A
+ROMC:5B4D INC @CF16.b
+ROMC:5B4F IF @CF16.b < @CF03.b
+ROMC:5B54 GOTO 5B3E
+ROMC:5B57 GOTO 5BA1
+
+
+ROMC:5B5A GOSUB 6AB5
+ROMC:5B5D IF @CF76.b = 0x01
+ROMC:5B62 GOTO 6589
+ROMC:5B65 IF RANDOM(0x64) <= @CFB3.b
+ROMC:5B6A GOTO 5B70
+ROMC:5B6D GOTO 56F1
+
+
+ROMC:5B70 GOSUB 685D
+ROMC:5B73 GOSUB 6891
+ROMC:5B76 GOSUB 686B
+ROMC:5B79 GOSUB 6B36
+ROMC:5B7C IF @CFB4.b > RANDOM(0x64)
+ROMC:5B81 GOTO 5BA1
+ROMC:5B84 GOSUB 6996
+ROMC:5B87 GOSUB 6D89
+ROMC:5B8A GOSUB 6BF8
+ROMC:5B8D GOSUB 6B55
+ROMC:5B90 GOSUB 6D3B
+ROMC:5B93 IF 0x00 = @CF24.b AND 0x90
+ROMC:5B9A RETURN
+ROMC:5B9B GOTO 6986
+
+
+ROMC:5B9E GOSUB 6C69		// print target is strong against item.
+ROMC:5BA1 GOSUB 6C84		// print nothing happened.
+ROMC:5BA4 GOSUB 6905
+ROMC:5BA7 LET @CF74.w = 0x00
+ROMC:5BAC GOTO 635F
+
+// item effect 20 : lower stats (e.g. heat, stench, sand)
+ROMC:5BAF GOSUB 6C43
+ROMC:5BB2 GOSUB 5DD6
+ROMC:5BB5 IF RANDOM(0x64) > @(CF30).b -- @CF25.b
+ROMC:5BBC GOTO 5BC2
+ROMC:5BBF GOTO 56F1
+
+
+ROMC:5BC2 LET @CFB8.b = @(CF30).b / 0x04 + 0x01
+ROMC:5BCB LET @(CF30).b = @(CF30).b -- @CFB8.b
+ROMC:5BD2 GOSUB 6BF8
+ROMC:5BD5 GOSUB 6B55
+ROMC:5BD8 GOSUB 5BEA
+ROMC:5BDB LET @D900.w = @CFB8.b
+ROMC:5BE1 LET @D90C.b = 0x3E			// set message : ^down by $AMOUNT.
+ROMC:5BE7 GOTO 6CD4						// print message and return
+
+
+ROMC:5BEA LET @D90C.b = 0x37		// set message : ^$CHAR's group
+ROMC:5BF0 GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:5BF3 IF @CF1A.b = 0x01
+ROMC:5BF8 LET @D90C.b = 0x38			// set message : ^$CHAR
+ROMC:5BFE SYS 0020							// print message
+ROMC:5C01 LET @D90C.b = 0x13 + @CF24.b		// set message : 's Strength; 's Agility; 's Mana; 's Defense
+ROMC:5C09 SYS 0020							// print message
+ROMC:5C0C RETURN
+
+// item effect 21 : MANA-based elemental/status all enemies
+ROMC:5C0D GOSUB 6546				// initialize loop for either all party or all monsters
+ROMC:5C10 GOSUB 686B				// get attacker's MANA, including Magi
+ROMC:5C13 GOSUB 6E00				// aegis/elemental magi bonus to defense/resistance
+ROMC:5C16 GOSUB 6763				// get target's number of lives => @CF1A.b
+ROMC:5C19 IF @CF1A.b = 0x00	// if no lives left
+ROMC:5C1E GOTO 5C5E				// advance loop
+ROMC:5C21 GOSUB 6E57				// set message variable : target => @D90A.w
+ROMC:5C24 GOSUB 684F				// get target's element resistance => @CFA6.b
+ROMC:5C27 IF 0x00 < @CFA6.b AND @CF25.b	// if target resists attack's element(s)
+ROMC:5C2E GOTO 5C69				// print 'target is strong against item' and advance loop
+ROMC:5C31 GOSUB 685D				// get target enemy's element weakness => @CFA7.b
+ROMC:5C34 GOSUB 6891				// get target's MANA, including Magi
+ROMC:5C37 IF 0x00 = @CFA7.b AND @CF25.b	// if target is not weak against element(s)
+ROMC:5C3E GOTO 5C50				// go straight to calculate damage
+ROMC:5C41 LET @CFA4.b = 0x00		// temporarily ignore target's MANA
+ROMC:5C46 LET @CFAC.b = @CFAC.b + 0x05	// temporarily raise attacker's MANA amount
+ROMC:5C4D GOSUB 6C72				// print 'target is weak against item'
+ROMC:5C50 GOSUB 6A46				// calculate damage
+ROMC:5C53 IF @CF74.w > 0x00	// if damage > 0
+ROMC:5C58 GOTO 5C72				// apply magical damage to entire group
+ROMC:5C5B GOSUB 6C93
+ROMC:5C5E INC @CF15.b			// increment loop counter for target group ID
+ROMC:5C60 IF @CF15.b <= @CF01.b		// if target group ID <= max group ID
+ROMC:5C65 GOTO 5C10				// continue loop
+ROMC:5C68 RETURN
+
+// print target resists magic attack
+ROMC:5C69 GOSUB 6C69		// print target is strong against item.
+ROMC:5C6C GOSUB 6C84		// print nothing happened.
+ROMC:5C6F GOTO 5C5E		// advance loop (all enemies magic attack)
+
+// apply magical damage to entire group
+ROMC:5C72 GOSUB 64E7		// incur damage to entire group
+ROMC:5C75 GOTO 5C5E		// advance loop (all enemies magic attack)
+
+// item effect 22 : self-explode
+ROMC:5C78 GOSUB 58E0
+ROMC:5C7B GOSUB 68B7
+ROMC:5C7E LET @CF32.w = @CF12.b * 0x0100 + 0xD041
+ROMC:5C89 LET @CF32.w = @CF11.b * 0x08 + @CF32.w
+ROMC:5C92 LET @(CF32).w = 0x00
+ROMC:5C97 GOSUB 6C7B
+ROMC:5C9A IF @CFB7.b > 0x00
+ROMC:5C9F RETURN
+ROMC:5CA0 LET @D90C.b = 0x39		// set message : ^Died in vain....
+ROMC:5CA6 GOTO 6CD4						// print message and return
+
+// item effect 23 : steal gold
+ROMC:5CA9 LET @D90C.b = 0x3A		// set message : ^$CHAR tried to^steal GP.
+ROMC:5CAF SYS 0020							// print message
+ROMC:5CB2 GOSUB 69FE
+ROMC:5CB5 IF RANDOM(0x64) <= @CFAB.b + @CF24.b
+ROMC:5CBC GOTO 5CC8
+ROMC:5CBF LET @D90C.b = 0x3B			// set message : ^Failed.
+ROMC:5CC5 GOTO 6CD4						// print message and return
+
+
+ROMC:5CC8 LET @CF74.w = @CFAB.b * @CF25.b
+ROMC:5CCF LET @CF77.l = @C2A2.l
+ROMC:5CD5 IF @CF12.b <= 0x04
+ROMC:5CDA GOTO 5D0F
+ROMC:5CDD LET @C2A2.l = @CF77.l -- @CF74.w
+ROMC:5CE5 LET @CF7C.l = @C2A2.l
+ROMC:5CEB LET @CF77.l = @CF77.l - @CF7C.l
+ROMC:5CF2 IF @CF77.w = 0x00
+ROMC:5CF7 GOTO 5CBF
+ROMC:5CFA GOSUB 6BF8
+ROMC:5CFD GOSUB 6B55
+ROMC:5D00 LET @D900.w = @CF77.w
+ROMC:5D06 LET @D90C.b = 0x3C		// set message : ^$AMOUNT GP stolen.
+ROMC:5D0C GOTO 6CD4						// print message and return
+
+
+ROMC:5D0F LET @C2A2.l = @CF77.l + @CF74.w
+ROMC:5D17 LET @CF7C.l = @C2A2.l
+ROMC:5D1D LET @CF4B.l = @7FF0.l
+ROMC:5D23 IF @CF7C.l > @CF4B.l
+ROMC:5D28 LET @CF7C.l = @CF4B.l
+ROMC:5D2D LET @C2A2.l = @CF7C.l
+ROMC:5D33 LET @CF77.l = @CF7C.l - @CF77.l
+ROMC:5D3A IF @CF77.b = 0x00
+ROMC:5D3F GOTO 5CBF
+ROMC:5D42 GOSUB 6BF8
+ROMC:5D45 GOSUB 6B55
+ROMC:5D48 LET @D900.w = @CF77.w
+ROMC:5D4E LET @D90C.b = 0x3D		// set message : ^Stole $AMOUNT GP.
+ROMC:5D54 GOTO 6CD4						// print message and return
+
+// item effect 24 : DNA
+ROMC:5D57 GOSUB 6C43						// print message based on group size
+ROMC:5D5A GOSUB 6CA2						// check reflect magic
+ROMC:5D5D GOSUB 6E84						// set high byte of ptr to target player => @CF31.b
+ROMC:5D60 LET @CF30.b = 0x0B			// set pointer to target's stats : Dn0B race
+ROMC:5D65 LET @CF89.b = @(CF30).b	// set race
+ROMC:5D6A IF @CF25.b >= @CF89.b	// if race >= item data 6th byte
+ROMC:5D6F GOTO 5D75						// deal damage proportional to target's HP
+ROMC:5D72 GOTO 6C84						// print message and end program
+
+// calculate damage proportional to target's HP
+ROMC:5D75 GOSUB 6E84						// set high byte of ptr to target => @CF31.b
+ROMC:5D78 LET @CF30.b = 0x0C			// set pointer to target's stats : Dn0C max HP
+ROMC:5D7D LET @CF0E.w = @(CF30).w	// set max HP
+ROMC:5D82 LET @CFB8.b = RANDOM(@CF24.b)	// set bonus damage = random(item data 5th byte)
+ROMC:5D87 LET @CF74.w = @CF0E.w * @CF24.b / @CF64.b + @CFB8.b	// set damage = target.maxHP * item.5thbyte / attacker.initiative + damage.bonus
+ROMC:5D92 GOSUB 6BF8						// sound effect, attacker's item
+ROMC:5D95 GOSUB 6B55						// play animation on target
+ROMC:5D98 GOTO 64E7						// incur damage to entire group
+
+// item effect 25 : raise stats (speedup, mirror)
+ROMC:5D9B GOSUB 6C60
+ROMC:5D9E GOSUB 5DD6
+ROMC:5DA1 LET @CF74.w = @(CF30).b + @CF25.b
+ROMC:5DA8 IF @CF74.w > 0xFF
+ROMC:5DAD LET @CF74.w = 0xFF
+ROMC:5DB2 LET @CFB8.b = @CF74.b - @(CF30).b
+ROMC:5DB9 LET @(CF30).b = @CF74.b
+ROMC:5DBE GOSUB 6BF8
+ROMC:5DC1 GOSUB 6BCB
+ROMC:5DC4 LET @D900.w = @CFB8.b
+ROMC:5DCA GOSUB 5BEA
+ROMC:5DCD LET @D90C.b = 0x3F		// set message : ^up by $AMOUNT.
+ROMC:5DD3 GOTO 6CD4						// print message and return
+
+// get target's STR
+ROMC:5DD6 GOSUB 6E84						// set high byte of ptr to target player
+ROMC:5DD9 LET @CF30.b = 0x0E + @CF24.b
+ROMC:5DE0 RETURN
+
+// item effect 26 : steal HP (e.g. Dissolve)
+ROMC:5DE1 LET @CF15.b = @CF12.b
+ROMC:5DE6 GOSUB 6E57
+ROMC:5DE9 GOTO 5D9B
+
+
+ROMC:5DEC GOSUB 6572
+ROMC:5DEF GOSUB 686B
+ROMC:5DF2 GOSUB 6891
+ROMC:5DF5 GOSUB 6ECD
+ROMC:5DF8 LET @CF74.w = @CF74.w -- @CFA4.b
+ROMC:5DFF GOSUB 6BF8
+ROMC:5E02 GOSUB 6B55
+ROMC:5E05 GOSUB 6C2B
+ROMC:5E08 GOSUB 694E
+ROMC:5E0B GOSUB 6CD8
+ROMC:5E0E LET @D90C.b = 0x26		// set message : ^Absorbed $AMOUNT HP.
+ROMC:5E14 SYS 0020						// print message
+ROMC:5E17 IF @CF76.b = 0x00
+ROMC:5E1C GOTO 635F
+ROMC:5E1F GOTO 5543
+
+// item effect 28 : status ailments all enemies (e.g. riddle)
+ROMC:5E22 GOSUB 686B
+ROMC:5E25 GOSUB 6546
+ROMC:5E28 GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:5E2B IF @CF1A.b = 0x00
+ROMC:5E30 GOTO 5E82
+ROMC:5E33 GOSUB 6E57
+ROMC:5E36 GOSUB 684F
+ROMC:5E39 IF 0x00 < @CFA6.b AND @CF25.b
+ROMC:5E40 GOTO 5E8D
+ROMC:5E43 GOSUB 685D
+ROMC:5E46 GOSUB 6891
+ROMC:5E49 GOSUB 6B36
+ROMC:5E4C IF @CFB4.b > RANDOM(0x64)
+ROMC:5E51 GOTO 5E7F
+ROMC:5E54 GOSUB 6A5A						// set max lives => @CF03.b = @Dn00
+ROMC:5E57 GOSUB 6996
+ROMC:5E5A GOSUB 6D89
+ROMC:5E5D INC @CF16.b
+ROMC:5E5F IF @CF16.b < @CF03.b
+ROMC:5E64 GOTO 5E57
+ROMC:5E67 GOSUB 6D3B
+ROMC:5E6A IF 0x00 = @CF24.b AND 0x90
+ROMC:5E71 GOTO 5E82
+ROMC:5E74 GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:5E77 LET @(CF30).b = 0x00
+ROMC:5E7C GOTO 5E82
+
+
+ROMC:5E7F GOSUB 6C84
+ROMC:5E82 INC @CF15.b
+ROMC:5E84 IF @CF15.b <= @CF01.b
+ROMC:5E89 GOTO 5E28
+ROMC:5E8C RETURN
+
+
+ROMC:5E8D GOSUB 6C69		// print target is strong against item
+ROMC:5E90 GOTO 5E7F
+
+// item effect 2A : multiply self
+ROMC:5E93 GOSUB 6E7C
+ROMC:5E96 LET @CF30.b = 0x00
+ROMC:5E9B LET @CF19.b = @(CF30).b
+ROMC:5EA0 IF @CF19.b >= 0x09
+ROMC:5EA5 GOTO 545A
+ROMC:5EA8 INC @CF19.b
+ROMC:5EAA LET @(CF30).b = @CF19.b
+ROMC:5EAF INC @CF30.w
+ROMC:5EB1 LET @CF1A.b = @(CF30).b
+ROMC:5EB6 INC @CF1A.b
+ROMC:5EB8 LET @(CF30).b = @CF1A.b
+ROMC:5EBD LET @CF32.w = @CF12.b * 0x20 + @CF19.b * 0x08 + 0xD038
+ROMC:5ECB LET @(CF32).b = 0x00
+ROMC:5ED0 INC @CF32.b
+ROMC:5ED2 GOSUB 6E7C
+ROMC:5ED5 LET @CF30.b = 0x0C
+ROMC:5EDA LET @(CF32).w = @(CF30).w * 0x08 / 0x0A
+ROMC:5EE3 LET @D90C.b = 0x5C			// set message : ^$CHAR splitted.
+ROMC:5EE9 SYS 0020							// print message
+ROMC:5EEC GOSUB 6BF8
+ROMC:5EEF LET @CF15.b = @CF12.b
+ROMC:5EF4 GOSUB 6B55
+ROMC:5EF7 RETURN
+
+// item effect 2B : Apollo's Aegis
+// Apollo's text for each round
+ROMC:5EF8 IF 0x05 = @D848.b
+ROMC:5EFE LET @FFB0.b = 0x12
+ROMC:5F04 LET @D90C.b = @D848.b + 0x5C	// set message : Apollo's text before each round
+ROMC:5F0D GOTO 6CD4									// print message and return
+
+// item effect 2C : Apollo's Masmune 1
+// Apollo transforms, round 1
+ROMC:5F10 LET @D90C.b = 0x62						// set message : <48 33 00>^He transformed?!^^^$CHAR:Shall we^ start now?^
+ROMC:5F16 SYS 0020										// print message
+ROMC:5F19 GOTO 5695
+
+// item effect 2D : Apollo's Masmune 2
+ROMC:5F1C LET @CF08.w = @D541.w
+ROMC:5F22 GOSUB 5F39
+ROMC:5F25 IF @CF08.w < 0x2710
+ROMC:5F2B GOTO 5F33
+ROMC:5F2E IF @CF54.b > 0x14
+ROMC:5F33 GOSUB 5F63
+ROMC:5F36 GOTO 5695
+
+
+ROMC:5F39 LET @CF0E.w = @D50C.w
+ROMC:5F3F LET @CF54.b = @D848.b
+ROMC:5F45 RETURN
+
+// item effect 2E : Apollo's Flare
+ROMC:5F46 LET @CF08.w = @D541.w
+ROMC:5F4C GOSUB 5F39
+ROMC:5F4F IF @CF08.w < 0x2710
+ROMC:5F55 GOTO 5F5D
+ROMC:5F58 IF @CF54.b > 0x14
+ROMC:5F5D GOSUB 5F63
+ROMC:5F60 GOTO 5C0D
+
+
+// Apollo transforms, round 2
+ROMC:5F63 LET @CF00.b = 0x00
+ROMC:5F68 GOSUB 6755		// check number of lives
+ROMC:5F6B IF @CF1A.b > 0x00
+ROMC:5F70 GOTO 5F7D
+ROMC:5F73 INC @CF00.b
+ROMC:5F75 IF @CF00.b <= 0x04
+ROMC:5F7A GOTO 5F68
+ROMC:5F7D LET @D90A.w = @CF00.b
+ROMC:5F83 LET @D90C.b = 0x63					// set message : ^$CHAR:Wha.. What^ is going on?^ My.. My body!^<48 34 01>^ What is this?!^^$CHAR:Your MAGI^ is not perfect!^ I have the very^ last one here!^^$CHAR:.. S.. Sh.. ..^ You.. .. Cap..tain..^
+ROMC:5F89 LET @FFB0.b = 0x04
+ROMC:5F8F SYS 0020									// print message
+ROMC:5F92 LET @CFC0.b = 0x01
+ROMC:5F97 RETURN
+
+// item effect 30 : Noname
+// Apollo transforms, round 3
+ROMC:5F98 LET @CF16.b = 0x00
+ROMC:5F9D LET @D90C.b = 0x64				// set message : ^$CHAR:I.. I'm.. ..^ .. m.. melting.. ..^<48 35 01>
+ROMC:5FA3 SYS 0020
+ROMC:5FA6 LET @CF15.b = 0x08
+ROMC:5FAB IF 0x01 = @D401.b
+ROMC:5FB1 GOTO 5FFC
+ROMC:5FB4 GOSUB 6BF8
+ROMC:5FB7 GOSUB 6B55
+ROMC:5FBA LET @D90C.b = 0x66		// set message : ^$CHAR exploded!^
+ROMC:5FC0 SYS 0020							// print message
+ROMC:5FC3 GOSUB 6EDC					// initialize target to first player => @CF15.b
+ROMC:5FC6 GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:5FC9 IF @CF1A.b = 0x00
+ROMC:5FCE GOTO 5FEF
+ROMC:5FD1 GOSUB 6E57
+ROMC:5FD4 GOSUB 60B9
+ROMC:5FD7 LET @CF74.w = @CF74.w / 0x04
+ROMC:5FDE GOSUB 694E
+ROMC:5FE1 GOSUB 6C2B
+ROMC:5FE4 IF @CF76.b = 0x00
+ROMC:5FE9 GOTO 5FEF
+ROMC:5FEC GOSUB 5543
+ROMC:5FEF INC @CF15.b
+ROMC:5FF1 IF @CF15.b <= 0x04
+ROMC:5FF6 GOTO 5FC6
+ROMC:5FF9 GOTO 60C4
+
+
+// Apollo transforms, round 4
+ROMC:5FFC LET @CF60.b = 0x00
+ROMC:6001 LET @CFB7.b = 0x00
+ROMC:6006 LET @D90C.b = 0x65			// set message : ^Father:Watch out!^ He's exploding!!^
+ROMC:600C SYS 0020							// print message
+ROMC:600F GOSUB 6BF8
+ROMC:6012 GOSUB 6B55
+ROMC:6015 LET @D90C.b = 0x66
+ROMC:601B SYS 0020
+ROMC:601E LET @CF30.w = @CF60.b * 0x0100 + 0xD001
+ROMC:6029 IF @(CF30).b = 0x01
+ROMC:602E INC @CFB7.b
+ROMC:6030 INC @CF60.b
+ROMC:6032 IF @CF60.b <= 0x03
+ROMC:6037 GOTO 601E
+ROMC:603A IF @CFB7.b > 0x00
+ROMC:603F GOTO 606A
+ROMC:6042 LET @D90A.w = 0x04
+ROMC:6048 GOSUB 60B9
+ROMC:604B LET @CF15.b = 0x04
+ROMC:6050 GOSUB 694E
+ROMC:6053 GOSUB 6C2B
+ROMC:6056 IF @CF76.b = 0x00
+ROMC:605B GOTO 5FEF
+ROMC:605E LET @D90A.w = 0x04
+ROMC:6064 GOSUB 5543
+ROMC:6067 GOTO 60C4
+
+
+ROMC:606A GOSUB 6EDC					// initialize target to first player => @CF15.b
+ROMC:606D GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:6070 IF @CF1A.b = 0x00
+ROMC:6075 GOTO 609D
+ROMC:6078 GOSUB 6E57
+ROMC:607B GOSUB 60B9
+ROMC:607E LET @CF74.w = @CF74.w / @CFB7.b
+ROMC:6085 LET @D900.w = @CF74.w
+ROMC:608B LET @D910.b = 0x00
+ROMC:6091 LET @D90C.b = 0x67			// set message : ^Father:$CHAR!^^He protected $CHAR^from explosion andgot $AMOUNTdamages.^
+ROMC:6097 SYS 0020							// print message
+ROMC:609A SYS 01E0
+ROMC:609D INC @CF15.b
+ROMC:609F IF @CF15.b <= 0x03
+ROMC:60A4 GOTO 606D
+ROMC:60A7 LET @D441.w = 0x00
+ROMC:60AD LET @D90A.w = 0x04
+ROMC:60B3 GOSUB 5543
+ROMC:60B6 GOTO 60C4
+
+
+ROMC:60B9 LET @CF74.b = RANDOM(@CF25.b)
+ROMC:60BE LET @CF75.b = @CF24.b
+ROMC:60C3 RETURN
+
+
+ROMC:60C4 LET @D501.b = 0x00
+ROMC:60CA LET @CFC0.b = 0x00
+ROMC:60CF RETURN
+
+// item effect 2F : Smasher
+ROMC:60D0 LET @CF16.b = 0x00
+ROMC:60D5 IF @CFC0.b = 0x00
+ROMC:60DA GOTO 614E
+ROMC:60DD IF @CFC0.b = 0x01
+ROMC:60E2 GOTO 6210
+ROMC:60E5 LET @FFB0.b = 0x13
+ROMC:60EB LET @D90C.b = 0x6C			// set message : ^$CHAR launched^the Smasher!^
+ROMC:60F1 SYS 0020							// print message
+ROMC:60F4 LET @D910.b = 0x19
+ROMC:60FA LET @FFB2.b = 0x18			// sound effect
+ROMC:6100 SYS 01E0							// play sound effect
+ROMC:6103 GOSUB 6EDC					// initialize target to first player => @CF15.b
+ROMC:6106 GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:6109 IF @CF1A.b = 0x00
+ROMC:610E GOTO 613A
+ROMC:6111 LET @CF74.w = RANDOM(@CF25.b) * 0x12 + @CFAA.b
+ROMC:611A GOSUB 694E
+ROMC:611D GOSUB 6E57
+ROMC:6120 GOSUB 6C2B
+ROMC:6123 LET @FFB2.b = 0x28			// sound effect
+ROMC:6129 LET @D910.b = 0x00
+ROMC:612F SYS 01E0
+ROMC:6132 IF @CF76.b > 0x00
+ROMC:6137 GOSUB 5543
+ROMC:613A INC @CF15.b
+ROMC:613C IF @CF15.b <= 0x04
+ROMC:6141 GOTO 6106
+ROMC:6144 LET @D910.b = 0x1A
+ROMC:614A SYS 01E0
+ROMC:614D RETURN
+
+
+ROMC:614E LET @CF60.b = 0x00
+ROMC:6153 LET @CF74.w = 0x00
+ROMC:6158 LET @D900.w = @CF60.b + 0x01
+ROMC:6160 LET @CF30.w = 0xCFCB + @CF60.b
+ROMC:6168 IF @(CF30).b = 0x01
+ROMC:616D GOTO 619F
+ROMC:6170 LET @CF74.w = RANDOM(@CF25.b) + @CF74.w + @CF25.b
+ROMC:6179 LET @D90C.b = 0x6A		// set message : ^Cannon$AMOUNT's attack.^
+ROMC:617F SYS 0020							// print message
+ROMC:6182 LET @D910.b = 0x15 + @CF60.b
+ROMC:618A LET @FFB2.b = 0x25			// sound effect
+ROMC:6190 SYS 01E0							// play sound effect
+ROMC:6193 LET @D910.b = 0x00
+ROMC:6199 SYS 01E0							// play sound effect
+ROMC:619C GOTO 61C1
+
+
+ROMC:619F LET @CF30.w = @CF60.b * 0x02 + 0xCFC3
+ROMC:61A9 LET @(CF30).w = @(CF30).w -- 0xFB
+ROMC:61B0 LET @D90C.b = 0x68			// set message : ^Repairing Cannon$AMOUNT.^
+ROMC:61B6 SYS 0020							// print message
+ROMC:61B9 IF @(CF30).w = 0x00
+ROMC:61BE GOTO 61F5
+ROMC:61C1 INC @CF60.b
+ROMC:61C3 IF @CF60.b <= 0x03
+ROMC:61C8 GOTO 6158
+ROMC:61CB GOSUB 6EDC					// initialize target to first player => @CF15.b
+ROMC:61CE GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:61D1 IF @CF1A.b = 0x00
+ROMC:61D6 GOTO 61EA
+ROMC:61D9 GOSUB 6E57
+ROMC:61DC GOSUB 694E
+ROMC:61DF GOSUB 6C2B
+ROMC:61E2 IF @CF76.b > 0x00
+ROMC:61E7 GOSUB 5543
+ROMC:61EA INC @CF15.b
+ROMC:61EC IF @CF15.b <= 0x04
+ROMC:61F1 GOTO 61CE
+ROMC:61F4 RETURN
+
+
+ROMC:61F5 LET @CF30.w = 0xCFCB + @CF60.b
+ROMC:61FD LET @(CF30).b = 0x00
+ROMC:6202 DEC @CFCF.b
+ROMC:6204 LET @D90C.b = 0x69				// set message : ^Repair completed.^
+ROMC:620A SYS 0020								// print message
+ROMC:620D GOTO 61C1
+
+
+ROMC:6210 LET @FFB0.b = 0x11
+ROMC:6216 GOTO 5512
+
+// item effect 09 : cure all party
+ROMC:6219 GOSUB 686B
+ROMC:621C GOSUB 6E00
+ROMC:621F LET @D90C.b = 0x04				// set message : ^$CHAR used^$ITEM.
+ROMC:6225 SYS 0020								// print message
+ROMC:6228 GOSUB 6BF8
+ROMC:622B IF @CF12.b <= 0x04
+ROMC:6230 GOTO 6244
+ROMC:6233 IF @CF15.b = 0x09
+ROMC:6238 GOTO 624C
+ROMC:623B GOSUB 6B55
+ROMC:623E GOSUB 6E67
+ROMC:6241 GOTO 624F
+
+
+ROMC:6244 IF @CF15.b = 0x09
+ROMC:6249 GOTO 623B
+ROMC:624C GOSUB 6E5E
+ROMC:624F GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:6252 IF @CF1A.b = 0x00
+ROMC:6257 GOTO 6299
+ROMC:625A GOSUB 6891
+ROMC:625D GOSUB 6EE8
+ROMC:6260 LET @CFB7.b = 0x00
+ROMC:6265 GOSUB 6A5A						// set max lives => @CF03.b = @Dn00
+ROMC:6268 GOSUB 67EC						// set target individual's status => @CF07.b
+ROMC:626B IF 0x00 < @CF07.b AND 0x90
+ROMC:6272 GOTO 6284
+ROMC:6275 GOSUB 6A6D
+ROMC:6278 LET @(CF32).w = @(CF32).w + @CFB5.w
+ROMC:627F INC @CFB7.b
+ROMC:6281 GOSUB 6A76
+ROMC:6284 INC @CF16.b
+ROMC:6286 IF @CF16.b < @CF03.b
+ROMC:628B GOTO 6268
+ROMC:628E IF @CFB7.b = 0x00
+ROMC:6293 GOTO 6299
+ROMC:6296 GOSUB 6E45
+ROMC:6299 INC @CF15.b
+ROMC:629B IF @CF15.b <= @CF01.b
+ROMC:62A0 GOTO 624F
+ROMC:62A3 RETURN
+
+// item effect 0B : Heart Magi
+ROMC:62A4 GOSUB 6EDC			// initialize target to first player D0 => @CF15.b
+ROMC:62A7 GOSUB 6E84			// set D0 => @CF31.b
+ROMC:62AA LET @CF30.b = 0x00		// set pointer to target data to D000 = max lives
+ROMC:62AF LET @CF88.w = @CF30.w + 0x01		// set pointer to D001 = current lives
+ROMC:62B6 LET @(CF88).b = @(CF30).b				// current lives = max lives
+ROMC:62BB LET @CF32.w = @CF30.w + 0x40		// set pointer to status = D040
+ROMC:62C2 LET @(CF32).b = 0x00						// reset status = 0
+ROMC:62C7 LET @CF88.w = @CF30.w + 0x0C		// set pointer to max HP = D00C
+ROMC:62CE LET @CF32.w = @CF30.w + 0x41		// set pointer to current HP = D041
+ROMC:62D5 LET @(CF32).w = @(CF88).w				// set current HP = max HP
+ROMC:62DA INC @CF15.b
+ROMC:62DC IF @CF15.b <= 0x04
+ROMC:62E1 GOTO 62A7
+ROMC:62E4 LET @D90C.b = 0x36				// set message : ^Came back to life^with [MAGI] Heart!!
+ROMC:62EA GOTO 6CD4							// print message and return
+
+// item effect 29 : Critical damage (e.g. Critical)
+ROMC:62ED GOSUB 6905					// find first alive member in group
+ROMC:62F0 LET @D90C.b = 0x42		// set message : ^$CHAR hits^weakness of^$CHAR with^$ITEM.
+ROMC:62F6 SYS 0020						// print message
+ROMC:62F9 GOSUB 69B5					// set target's species => @CFA8.b
+ROMC:62FC IF @CFA8.b > 0xF0		// if species > 0xF0 (players, bosses)
+ROMC:6301 GOTO 630C					// deal normal damage
+ROMC:6304 IF RANDOM(0x64) <= 0x1E	// if random(100) <= 30
+ROMC:6309 GOTO 632F					// apply mighty blow
+// normal damage
+ROMC:630C LET @CFB8.b = RANDOM(@CFAA.b)		// set bonus damage = random(attacker.STR)
+ROMC:6311 LET @CF74.w = @CFAA.b * @CF24.b + @CFB8.b // set damage = attacker.STR * item.5thbyte + damage.bonus
+ROMC:631A GOSUB 6BF8					// sound effect, attacker's item
+ROMC:631D GOSUB 6B55					// play animation on target
+ROMC:6320 GOSUB 6C2B					// print damages to target
+ROMC:6323 GOSUB 694E					// change target HP
+ROMC:6326 IF @CF76.b = 0x00		// if flag = 0 alive
+ROMC:632B RETURN							// end program
+ROMC:632C GOTO 5543					// print ^$CHAR fell. end program
+
+// mighty blow
+ROMC:632F LET @FFB2.b = 0x1A			// set sound effect
+ROMC:6335 LET @CFF5.b = @CF15.b	// set monster ID for animation = target ID
+ROMC:633A LET @D910.b = 0xC7		// set item animation ID
+ROMC:6340 SYS 01E0							// play sound effect
+ROMC:6343 LET @D90C.b = 0x43			// set message : ^Mighty blow!
+ROMC:6349 SYS 0020							// print message
+ROMC:634C LET @CF0A.w = 0x00		// reset current HP
+ROMC:6351 GOSUB 6A6D						// get pointer to target individual's current HP => @CF32.w
+ROMC:6354 LET @(CF32).w = @CF0A.b// set current HP = 0
+ROMC:6359 GOSUB 5543						// print 'target fell'
+ROMC:635C GOTO 6969						// check if target just died, end pragram
+
+// execute counter-attacks
+ROMC:635F GOSUB 69C3				// get defender's item ID => @CF17.w
+ROMC:6362 GOSUB 69D1				// get item data, 2nd byte => @CFB0.b
+ROMC:6365 LET @D908.w = @CF17.w		// set target item name
+ROMC:636B IF 0x00 < @CFB0.b AND 0x01	// is counterattack STR-based
+ROMC:6372 GOSUB 638A				// execute STR.counterattack
+ROMC:6375 IF 0x00 < @CFB0.b AND 0x02	// is counterattack STATUS-based
+ROMC:637C GOSUB 63E5				// execute STATUS.counterattack
+ROMC:637F IF 0x00 < @CFB0.b AND 0x04	// is counterattack MANA-based
+ROMC:6386 GOSUB 645D				// execute MANA.counterattack
+ROMC:6389 RETURN
+
+// counterattack STR-based
+ROMC:638A LET @D90C.b = 0x44		// set message : ^$CHAR counter-attacks^with $ITEM.
+ROMC:6390 SYS 0020							// print message
+ROMC:6393 GOSUB 6E84						// set high byte of ptr to target player
+ROMC:6396 LET @CF30.b = 0x0E			// set Dn0E = STR
+ROMC:639B LET @CFA2.b = @(CF30).b			//	set target's STR
+ROMC:63A0 IF 0x00 < @CF07.b AND 0x04	// if target status POIS
+ROMC:63A7 LET @CFA2.b = @CFA2.b / 0x02	// halve STR
+ROMC:63AE GOSUB 6E84						// set high byte of ptr to target player
+ROMC:63B1 GOSUB 6EE2						// get character's Magi equipped
+ROMC:63B4 IF @(CF30).w = 0x0100		// if Power Magi
+ROMC:63BA LET @CFA2.b = @C2DA.b AND 0x0F + 0x05 + @CFA2.b	// raise STR
+ROMC:63C6 GOSUB 68F5						// get defender item 5th byte => @CFB1.b
+ROMC:63C9 IF @CF74.w < @CFA2.b * 0x02		// if damage < target.STR * 2
+ROMC:63D0 LET @CF74.w = @CFA2.b * 0x02	// damage.counter = target.STR * 2
+ROMC:63D7 LET @CF74.w = @CF74.w * @CFB1.b / 0x0A + @CFA2.b		// damage.counter = damage.counter * defender.item.byte.5th / 10 + target.STR
+ROMC:63E2 GOTO 64B7						// update HP, lives, animation, return
+
+// counterattack STATUS-based
+ROMC:63E5 LET @D90C.b = 0x44		// set message : ^$CHAR counter-attacks^with $ITEM.
+ROMC:63EB SYS 0020						// print message
+ROMC:63EE GOSUB 68F5					// get defender item 5th byte => @CFB1.b
+ROMC:63F1 GOSUB 6833					// get attacking player's element resistance => @CFAD.b
+ROMC:63F4 GOSUB 6823					// get defender item data, 6th byte => @CFB2.b
+ROMC:63F7 IF 0x00 < @CFAD.b AND @CFB2.b		// if target is immune to defender.item.element
+ROMC:63FE GOTO 642C					// print resist attack and end program
+ROMC:6401 GOSUB 6841					// get attacker's element weakness => @CFAE.b
+ROMC:6404 GOSUB 686B					// get attacker's MANA, including Magi => @CFAC.b
+ROMC:6407 GOSUB 6891					// get defender's MANA, including Magi => @CFA4.b
+ROMC:640A LET @CFB4.b = 0x00		// set status hit chance
+ROMC:640F IF 0x00 < @CFAE.b AND @CFB2.b		// if attacker weak against defender.item.element (wrong expression. should be = sign, not < sign)
+ROMC:6416 LET @CFB4.b = @CFAC.b -- @CFA4.b * 0x02 + 0x32		// set hit chance = attacker.MANA -- defender.MANA * 2 + 50
+ROMC:6421 IF @CFB4.b < RANDOM(0x64)		// if hit chance < random(100)
+ROMC:6426 GOTO 6432			// apply status ailment to attacker
+ROMC:6429 GOTO 642F			// print resist attack and end program
+
+// print resist attack
+ROMC:642C GOSUB 6C69			// print target is strong against item.
+ROMC:642F GOTO 6C84			// print nothing happened and return
+
+// apply status ailment to attacker
+ROMC:6432 GOSUB 6EF9					// initialize individual status => @CF32.w
+ROMC:6435 GOSUB 6E94					// get pointer to individual status => @CF32.w
+ROMC:6438 LET @(CF32).b = @(CF32).b OR @CFB1.b		// set new status = status.old OR defender.item.element
+ROMC:643F GOSUB 6C09					// sound effect, defender's item
+ROMC:6442 GOSUB 6BAE					// set defender item animation and attacking monster ID
+ROMC:6445 LET @CF24.b = @CFB1.b	// set data to defender item data, 5th byte
+ROMC:644A LET @CF15.b = @CF12.b	// set target ID = attacker group ID
+ROMC:644F GOSUB 6D3B					// apply each status from item to target
+ROMC:6452 IF 0x00 < @(CF32).b AND 0x90		// if target is dead by ailment
+ROMC:6459 GOSUB 68C4					// decrement lives
+ROMC:645C RETURN
+
+// counterattack MANA-based
+ROMC:645D LET @D90C.b = 0x44	// set message : ^$CHAR counter-attacks^with $ITEM.
+ROMC:6463 SYS 0020				// print message
+ROMC:6466 GOSUB 6823			// get defender item data, 6th byte => @CFB2.b
+ROMC:6469 GOSUB 6833			// get attacking player's element resistance => @CFAD.b
+ROMC:646C IF 0x00 < @CFAD.b AND @CFB2.b		// if attacker resisted element
+ROMC:6473 GOTO 64DB			// print No Effect. and end program
+ROMC:6476 GOSUB 6841			// get attacking player's element weakness => @CFAE.b
+ROMC:6479 GOSUB 686B			// get attacker's MANA, including Magi => @CFAC.b
+ROMC:647C GOSUB 6891			// get defender's MANA, including Magi => @CFA4.b
+ROMC:647F IF 0x00 < @CFAE.b AND @CFB2.b	// if attacker weak against element
+ROMC:6486 LET @CFAC.b = 0x00		// set attacker.MANA = 0
+ROMC:648B GOSUB 68F5			// set defender item multiplier => @CFB1.b
+ROMC:648E LET @CFB8.b = RANDOM(@CFA4.b)		// damage.bonus = random(defender.MANA)
+ROMC:6493 LET @CF74.w = @CFA4.b * @CFB1.b + @CFB8.b	// set damage = defender.MANA * item.multiplier + damage.bonus
+ROMC:649C LET @CF39.w = @CF74.w * @CFAC.b / 0xC8		// set damage.repelled = damage * attacker.MANA / 200
+ROMC:64A5 LET @CF74.w = @CF74.w -- @CF39.w		// set final damage
+ROMC:64AC IF @CF74.w > 0x00		// if damage > 0
+ROMC:64B1 GOTO 64B7					// update HP, lives, animation, return
+ROMC:64B4 GOTO 6C93					// no damage and end program
+
+// end phase of counter-attacks
+ROMC:64B7 GOSUB 68D4			// update attacker HP after counter-attack
+ROMC:64BA GOSUB 6C09			// sound effect, defender's item
+ROMC:64BD GOSUB 6BAE			// set defender item animation and attacking monster ID
+ROMC:64C0 LET @D900.w = @CF74.w	// set message variable : $amount damage
+ROMC:64C6 LET @D90C.b = 0x45			// set message : ^$CHAR got^$AMOUNTdamages.
+ROMC:64CC SYS 0020							// print message
+ROMC:64CF IF @CF08.w > 0x00			// if attacker lives > 0
+ROMC:64D4 RETURN							// end counter-attack
+ROMC:64D5 GOSUB 6C7B						// print message : $Monster destroyed.
+ROMC:64D8 GOTO 68B7						// play attacker's item animation on monster
+
+// print Element resisted
+ROMC:64DB LET @D90C.b = 0x46		// set message : ^$CHAR is strong^against $ITEM.
+ROMC:64E1 SYS 0020							// print message
+ROMC:64E4 GOTO 6C84						// print nothing happened and return
+
+// incur damage to entire group
+ROMC:64E7 LET @D900.w = @CF74.w	// set message variable : $amount damage
+ROMC:64ED GOSUB 6E57						// set message variable : target => @D90A.w
+ROMC:64F0 LET @D90C.b = 0x40			// set message : ^$AMOUNTdamages to^$CHAR group.
+ROMC:64F6 GOSUB 6763						// get target's number of lives @CF14.b
+ROMC:64F9 IF @CF1A.b = 0x01
+ROMC:64FE LET @D90C.b = 0x41			// set message : ^$AMOUNTdamages to^$CHAR.
+ROMC:6504 SYS 0020							// print message
+ROMC:6507 GOSUB 6A5A						// set max lives => @CF03.b = @Dn00
+ROMC:650A LET @CFB7.b = 0x00
+ROMC:650F GOSUB 67EC						// set target individual's status => @CF07.b
+ROMC:6512 IF 0x00 < @CF07.b AND 0x90
+ROMC:6519 GOTO 6526
+ROMC:651C GOSUB 694E
+ROMC:651F IF @CF76.b = 0x01
+ROMC:6524 INC @CFB7.b
+ROMC:6526 INC @CF16.b
+ROMC:6528 IF @CF16.b < @CF03.b
+ROMC:652D GOTO 650F
+ROMC:6530 IF @CFB7.b = 0x00
+ROMC:6535 RETURN
+ROMC:6536 LET @D902.w = @CFB7.b
+ROMC:653C LET @D90C.b = 0x48			// set message : ^Defeated $AMOUNT.
+ROMC:6542 SYS 0020							// print message
+ROMC:6545 RETURN
+
+// initialize loop for either all party or all monsters
+ROMC:6546 GOSUB 6C57					// print message: ^$CHAR attacks^enemies with^$ITEM.
+ROMC:6549 GOSUB 6BF8					// sound effect, attacker's item
+ROMC:654C GOSUB 6B55					// play animation on target
+ROMC:654F LET @CFB7.b = 0x00		// set kill counter
+ROMC:6554 IF @CF12.b <= 0x04		// if attacker is party
+ROMC:6559 GOTO 6567					// initial loop to all party or monsters and return
+ROMC:655C IF @CF15.b = 0x08		// if target is random
+ROMC:6561 GOTO 6E67					// initialize loop thru monsters and return
+ROMC:6564 GOTO 6E5E					// initialize loop thru party members and return
+
+// decide all party or all monsters
+ROMC:6567 IF @CF15.b = 0x08		// if target is random
+ROMC:656C GOTO 6E5E					// initialize loop thru party members and return
+ROMC:656F GOTO 6E67					// else loop thru monster and return
+
+// check if item hit success
+ROMC:6572 GOSUB 6C3A				// print message : ?? hits with ??
+ROMC:6575 GOSUB 6AAD				// get hit chance => @CFB3.b
+ROMC:6578 IF @CF76.b = 0x01	// check flag, attack was blocked?
+ROMC:657D GOTO 6589				// attack was blocked, end program
+ROMC:6580 IF RANDOM(0x64) <= @CFB3.b		// if random(100) <= hit chance
+ROMC:6585 RETURN						// attack hit, return
+ROMC:6586 GOSUB 56F1				// attack missed, play sound
+ROMC:6589 END							// end item effect
+
+// item effect 00, 32 : heal
+ROMC:658A GOSUB 6D7B
+ROMC:658D IF 0x00 = @CF07.b AND 0x90
+ROMC:6594 GOTO 659D
+ROMC:6597 LET @CFF4.b = 0x01
+ROMC:659C RETURN
+
+// restore item uses?
+ROMC:659D LET @CF30.w = 0xC20D + @CF88.b
+ROMC:65A5 LET @CFAC.b = @(CF30).b
+ROMC:65AA LET @CF30.w = 0xC20D + @CF94.b
+ROMC:65B2 LET @CFA4.b = @(CF30).b
+ROMC:65B7 GOSUB 6EE8
+ROMC:65BA LET @CF32.w = @CF94.b + 0xC207
+ROMC:65C2 LET @(CF32).w = @(CF32).w + @CFB5.w
+ROMC:65C9 LET @CF30.w = @CF94.b + 0xC209
+ROMC:65D1 IF @(CF32).w > @(CF30).w
+ROMC:65D6 LET @(CF32).w = @(CF30).w
+ROMC:65DB GOTO 66AA
+
+// item effect 01, 33 : cure
+ROMC:65DE GOSUB 6D7B
+ROMC:65E1 IF 0x00 = @CF07.b AND 0x90
+ROMC:65E8 GOTO 65EE
+ROMC:65EB GOTO 6597
+
+
+ROMC:65EE INC @CF34.w
+ROMC:65F0 LET @CF25.b = @(CF34).b
+ROMC:65F5 LET @CFB5.w = RANDOM(@CF25.b) + @CF24.b
+ROMC:65FC GOTO 65BA
+
+// item effect 02, 34 : heal status
+ROMC:65FF GOSUB 6D7B
+ROMC:6602 LET @CF06.b = @CF07.b AND @CF24.b
+ROMC:6609 IF @CF06.b = @CF07.b
+ROMC:660E GOTO 6597
+ROMC:6611 LET @(CF32).b = @CF06.b
+ROMC:6616 GOTO 66AA
+
+// item effect 03, 35 : elixier
+ROMC:6619 LET @CF36.w = @CF94.b + 0xC207
+ROMC:6621 LET @CF30.w = @CF36.w + 0x02
+ROMC:6628 LET @(CF36).w = @(CF30).w
+ROMC:662D GOSUB 6D7B
+ROMC:6630 LET @(CF32).b = 0x00
+ROMC:6635 LET @CF30.w = @CF94.b + 0xC205
+ROMC:663D LET @CF89.b = @(CF30).b
+ROMC:6642 IF @CF89.b = 0x00			// if player is human
+ROMC:6647 GOTO 66AA
+ROMC:664A GOSUB 6EC7		// initialize item counter CF04.b => 0x00
+ROMC:664D LET @CF30.w = @CF04.b * 0x02 + @CF94.b + 0xC20F	// set Nth item's ID and uses
+ROMC:6659 LET @CF74.w = @(CF30).w		// set item ID and uses
+ROMC:665E IF @CF74.b = 0xFF		// no move or empty item slot
+ROMC:6663 GOTO 66A0		// next item
+ROMC:6666 LET @CF34.w = @CF74.b * 0x08 + 0x6F82	// set ptr to item stat byte 3
+ROMC:6670 IF @CF00.b < @(CF34).b AND 0x80	// item is robot special, i.e. don't half use
+ROMC:6677 GOTO 66A0
+ROMC:667A LET @CF32.w = 0x7E80 + @CF74.b		// set ptr to item max uses
+ROMC:6682 LET @CF75.b = @(CF32).b			// set item uses to max
+ROMC:6687 IF @CF89.b = 0x01				// if player is mutant
+ROMC:668C GOTO 66AE						// mutant check
+ROMC:668F IF @CF89.b = 0x03				// if player is robot
+ROMC:6694 LET @CF75.b = @CF75.b / 0x02	// half max uses
+ROMC:669B LET @(CF30).w = @CF74.w		// restore item ID and uses to original, unchanged
+ROMC:66A0 INC @CF04.b						// increment loop counter
+ROMC:66A2 IF @CF04.b <= 0x07			// while less than 8th item
+ROMC:66A7 GOTO 664D						// repeat loop
+ROMC:66AA GOSUB 6C1A						// sound effect
+ROMC:66AD RETURN							// and done
+
+// mutant jumps here
+ROMC:66AE IF @CF74.b < 0x80			// item ID < 0x80, i.e. equippable item, not skill
+ROMC:66B3 GOTO 66A0						// next item
+ROMC:66B6 GOTO 669B						// return and skip racial check
+
+// item effect 04, 36 : teleport
+ROMC:66B9 LET @CFF4.b = 0x02
+ROMC:66BE RETURN
+
+// item effect 05, 37 : tent
+ROMC:66BF LET @CFF4.b = 0x03
+ROMC:66C4 GOTO 66AA
+
+// item effect 06, 38 : shield
+ROMC:66C7 LET @CFF4.b = 0x04
+ROMC:66CC RETURN
+
+// item effect 07, 39 : elemental shield
+ROMC:66CD LET @CF30.w = @CF94.b + 0xC205
+ROMC:66D5 IF @(CF30).b > 0x01
+ROMC:66DA GOTO 6597
+ROMC:66DD LET @CF94.w = 0xC20B + @CF24.b + @CF94.b
+ROMC:66E7 IF @(CF94).b >= 0x63
+ROMC:66EC GOTO 6597
+ROMC:66EF LET @(CF94).b = @(CF94).b + 0x03
+ROMC:66F6 LET @CFF4.b = 0x05 + @CF24.b
+ROMC:66FD GOTO 66AA					// sound effect and done
+
+// item effect 08, 3A : counter-attack
+ROMC:6700 LET @CF30.w = @CF94.b + 0xC205
+ROMC:6708 IF @(CF30).b > 0x01
+ROMC:670D GOTO 6597
+ROMC:6710 LET @CF94.w = 0xC209 + @CF94.b
+ROMC:6718 IF @(CF94).w >= 0x03E7
+ROMC:671E GOTO 6597
+ROMC:6721 LET @(CF94).w = @(CF94).w + 0x28
+ROMC:6728 LET @CFF4.b = 0x08
+ROMC:672D GOTO 66AA					// sound effect and done
+
+// item effect 09, 3B : heal staff
+ROMC:6730 LET @CF12.b = 0x00
+ROMC:6735 GOSUB 6DD0					// get player data offset from party order => @CFD0.b
+ROMC:6738 LET @CF94.b = @CFD0.b
+ROMC:673D GOSUB 658A
+ROMC:6740 INC @CF12.b
+ROMC:6742 INC @CF12.b
+ROMC:6744 IF @CF12.b <= 0x08
+ROMC:6749 GOTO 6735
+ROMC:674C LET @CFF4.b = 0x00
+ROMC:6751 GOTO 66AA					// sound effect and done
+
+// skip 6754, start at 6755
+--ROMC:6754 LET @CF05.b = RANDOM(@CF6E.b) @CF30.b = 0x01
+// CHECK NUMBER OF LIVES
+ROMC:6755 GOSUB 6E72					// initialize @CF31.b, pointer to active character
+ROMC:6758 LET @CF30.b = 0x01		// set low byte of pointer
+ROMC:675D LET @CF1A.b = @(CF30).b		// current number of lives
+ROMC:6762 RETURN
+
+// set target's number of lives
+ROMC:6763 GOSUB 6E84						// set high byte of ptr to target @CF31.b => Dn
+ROMC:6766 LET @CF30.b = 0x01			// set low byte of pointer to number of lives
+ROMC:676B LET @CF1A.b = @(CF30).b		// store current number of lives
+ROMC:6770 RETURN
+
+// get current item
+ROMC:6771 GOSUB 6E72						// initialize CF31.b, get active player's block
+ROMC:6774 LET @CF30.b = 0x12			// offset to array of item IDs, starting at Dn12
+ROMC:6779 LET @CF30.w = @CF04.b * 0x03 + @CF30.w	// itemID * 3 + offset = Dn12, Dn15, Dn18, etc.
+ROMC:6782 LET @CF13.w = @(CF30).w	// get actual item data ID, eg 00 for hammer, 01 long sword
+ROMC:6787 RETURN
+
+// get max lives
+ROMC:6788 GOSUB 6E72						// initialize CF31.b, get active player's block
+ROMC:678B LET @CF30.b = 0x00			// 00 Dn
+ROMC:6790 LET @CF03.b = @(CF30).b		// store max lives
+ROMC:6795 RETURN
+
+// get species
+ROMC:6796 GOSUB 6E72						// initialize CF31.b, get active player's block
+ROMC:6799 LET @CF30.b = 0x0A			// 0A Dn
+ROMC:679E LET @CF1B.b = @(CF30).b		// store species
+ROMC:67A3 RETURN
+
+// get item pointer, 1st byte data: flags: targeting
+ROMC:67A4 LET @CF34.w = @CF13.w * 0x08 + 0x6F80	// pointer to item data in ROM, 1st byte
+ROMC:67AE LET @CF20.b = @(CF34).b			// 1st byte of item data: flags: targeting
+ROMC:67B3 RETURN
+
+// get item pointer, 5th byte data: numeral for effect
+ROMC:67B4 LET @CF34.w = @CF13.w * 0x08 + 0x6F84	// pointer to item data in ROM, 5th byte
+ROMC:67BE LET @CF24.b = @(CF34).b
+ROMC:67C3 RETURN
+
+// get item pointer, 6th byte data: special effects
+ROMC:67C4 LET @CF34.w = @CF13.w * 0x08 + 0x6F85// pointer to item data in ROM, 6th byte
+ROMC:67CE LET @CF25.b = @(CF34).b
+ROMC:67D3 RETURN
+
+// get individual status
+ROMC:67D4 GOSUB 6EF9						// initialize individual status @CF32.w => 0x00
+ROMC:67D7 GOSUB 6EB6						// get pointer to active individual data => @CF32.w
+ROMC:67DA LET @CF06.b = @(CF32).b		// store status
+ROMC:67DF RETURN
+
+// get individual status
+ROMC:67E0 GOSUB 6EF9			// initialize pointer to individual status @CF32.w => 0x00
+ROMC:67E3 GOSUB 6E94						// get pointer to individual status => @CF32.w
+ROMC:67E6 LET @CF06.b = @(CF32).b		// set status
+ROMC:67EB RETURN
+
+// set target individual's status
+ROMC:67EC GOSUB 6EF9			// initialize pointer to individual status @CF32.w => 0x00
+ROMC:67EF GOSUB 6EA5			// set pointer to target's individual data => @CF32.w
+ROMC:67F2 LET @CF07.b = @(CF32).b		// target individual's status
+ROMC:67F7 RETURN
+
+// set individual status
+ROMC:67F8 GOSUB 6EF9								// initialize individual status						// initialize individual status @CF32.w => 0x00
+ROMC:67FB GOSUB 6E94						// get pointer to individual status => @CF32.w
+ROMC:67FE LET @(CF32).b = @CF06.b		// set new status
+ROMC:6803 RETURN
+
+// enemy set next attack
+ROMC:6804 LET @CF32.w = 0x03			// initialize ptr low byte to next attack
+ROMC:6809 GOSUB 6EB6						// get pointer to active individual data => @CF32.w
+ROMC:680C LET @(CF32).w = @CF13.w		// set attack
+ROMC:6811 RETURN
+
+// get individual's ID
+ROMC:6812 LET @CF30.w = @D802.b * 0x02 + 0xD803
+ROMC:681D LET @CF11.w = @(CF30).w
+ROMC:6822 RETURN
+
+// get defender item data, 6th byte
+ROMC:6823 LET @CF34.w = @CF17.w * 0x08 + 0x6F85
+ROMC:682D LET @CFB2.b = @(CF34).b
+ROMC:6832 RETURN
+
+// get attacking player's element resistance
+ROMC:6833 GOSUB 6E7C			// get high byte of pointer to attacking player's data => @CF31.b
+ROMC:6836 LET @CF30.b = 0x2D		// player data at offset D02D to D72D
+ROMC:683B LET @CFAD.b = @(CF30).b		// element resistance
+ROMC:6840 RETURN
+
+// get attacking player's element weakness
+ROMC:6841 GOSUB 6E7C			// get high byte of pointer to attacking player's data => @CF31.b
+ROMC:6844 LET @CF30.b = 0x2E		// player data at offset D02E to D72E
+ROMC:6849 LET @CFAE.b = @(CF30).b		// element weakness
+ROMC:684E RETURN
+
+// get target's element resistance
+ROMC:684F GOSUB 6E84						// set high byte of ptr to target enemy => @CF31.b
+ROMC:6852 LET @CF30.b = 0x2D		// enemy data at offset D02D to D72D
+ROMC:6857 LET @CFA6.b = @(CF30).b		// element resistance
+ROMC:685C RETURN
+
+// get target enemy's element weakness
+ROMC:685D GOSUB 6E84						// set high byte of ptr to target player
+ROMC:6860 LET @CF30.b = 0x2E		// enemy data at offset D02E to D72E
+ROMC:6865 LET @CFA7.b = @(CF30).b		// element weakness
+ROMC:686A RETURN
+
+// get attacker's MANA, including Magi
+ROMC:686B GOSUB 6E7C			// get high byte of pointer to attacker's data => @CF31.b
+ROMC:686E LET @CF30.b = 0x10		// attacker data at offset D010 to D710
+ROMC:6873 LET @CFAC.b = @(CF30).b		// attacker MANA
+ROMC:6878 GOSUB 6E7C			// get high byte of pointer to attacking player's data => @CF31.b
+ROMC:687B GOSUB 6EE2			// get attacker's Magi equipped => @CF30.b
+ROMC:687E IF @(CF30).w = 0x0102		// if item == Mana Magi
+ROMC:6884 LET @CFAC.b = @C2DE.b AND 0x0F + 0x05 + @CFAC.b			// total bonus MANA from Magi, & element of Magi?
+ROMC:6890 RETURN
+
+// get target's MANA, including Magi
+ROMC:6891 GOSUB 6E84						// get high byte of ptr to target => @CF31.b
+ROMC:6894 LET @CF30.b = 0x10		// target's data at offset D010 to D710
+ROMC:6899 LET @CFA4.b = @(CF30).b		// target's MANA
+ROMC:689E GOSUB 6E84						// get high byte of ptr to target enemy => @CF31.b
+ROMC:68A1 GOSUB 6EE2			// get target's Magi equipped => @CF30.b
+ROMC:68A4 IF @(CF30).w = 0x0102		// if item == Mana Magi
+ROMC:68AA LET @CFA4.b = @C2DE.b AND 0x0F + 0x05 + @CFA4.b			// total bonus MANA from Magi, & element of Magi?
+ROMC:68B6 RETURN
+
+// set STUN and decrement lives
+ROMC:68B7 GOSUB 6EF9			// reset pointer to data parameter => @CF32.w = 0x00
+ROMC:68BA GOSUB 6E94			// update pointer to attacker's individual status => @CF32.w = Dn40
+ROMC:68BD LET @(CF32).b = @(CF32).b OR 0x80	// char is STUN
+ROMC:68C4 GOSUB 6E7C			// get high byte of pointer to attacker's data
+ROMC:68C7 LET @CF30.b = 0x01		// set pointer to current lives = Dn01
+ROMC:68CC LET @(CF30).b = @(CF30).b - 0x01 // decrement current lives
+ROMC:68D3 RETURN
+
+// update attacker HP after counter-attack
+ROMC:68D4 LET @CF32.w = 0x01		// set Dn41 = current HP
+ROMC:68D9 GOSUB 6E94						// get pointer to attacker data => @CF32.w
+ROMC:68DC LET @CF08.w = @(CF32).w	// get current HP
+ROMC:68E1 LET @CF08.w = @CF08.w -- @CF74.w		// update HP after damage
+ROMC:68E8 LET @CFB5.w = @(CF32).w - @CF08.w		// set HP.changed
+ROMC:68EF LET @(CF32).w = @CF08.w	// set current HP, final
+ROMC:68F4 RETURN
+
+// set defender item 5th byte
+ROMC:68F5 LET @CF34.w = @CF17.w * 0x08 + 0x6F84	// pointer to item 5th byte
+ROMC:68FF LET @CFB1.b = @(CF34).b								// get item data
+ROMC:6904 RETURN
+
+// find first alive member in group
+ROMC:6905 LET @CF16.b = 0x00			// initialize loop counter until max lives
+ROMC:690A GOSUB 67EC						// set target individual's status => @CF07.b
+ROMC:690D IF 0x00 = @CF07.b AND 0x90		// if target is alive
+ROMC:6914 RETURN											// return
+ROMC:6915 INC @CF16.b					// advance counter for next life
+ROMC:6917 GOTO 690A						// continue loop
+
+// update attacker's STR
+ROMC:691A GOSUB 6E7C						// get high byte of pointer to attacker's data
+ROMC:691D LET @CF30.b = 0x0E			// get pointer to STR
+ROMC:6922 LET @CFAA.b = @(CF30).b		// set attacker's STR
+ROMC:6927 IF 0x00 < @CF06.b AND 0x20	// if attacker is CURS
+ROMC:692E LET @CFAA.b = @CFAA.b / 0x02	// halve STR
+ROMC:6935 GOSUB 6E7C						// get high byte of pointer to attacker's data
+ROMC:6938 GOSUB 6EE2						// get character's Magi equipped
+ROMC:693B IF @(CF30).w = 0x0100		// if Power MAGI
+ROMC:6941 LET @CFAA.b = @C2DA.b AND 0x0F + 0x05 + @CFAA.b	// raise attacker STR
+ROMC:694D RETURN
+
+// change target HP
+ROMC:694E GOSUB 6A6D		// get pointer to target individual's current HP => @CF32.w
+ROMC:6951 LET @CF0A.w = @(CF32).w		// initialize temp current HP
+ROMC:6956 LET @CF0A.w = @CF0A.w -- @CF74.w	// HP.temp = HP.temp -- damage
+ROMC:695D LET @CFB5.w = @(CF32).w - @CF0A.w	// HP.change = HP.curr - HP.temp
+ROMC:6964 LET @(CF32).w = @CF0A.w		// HP.curr = HP.temp
+// check if target just died
+ROMC:6969 LET @CF76.b = 0x00		// flag, not dead
+ROMC:696E IF @CF0A.w > 0x00		// if temp current HP > 0
+ROMC:6973 RETURN					// still alive
+ROMC:6974 GOSUB 6EF9			// initialize individual status @CF32.w => 0x00
+ROMC:6977 GOSUB 6EA5			// set pointer to target's individual data => @CF32.w
+ROMC:697A LET @(CF32).b = @(CF32).b OR 0x80		// set status to stun only
+ROMC:6981 LET @CF76.b = 0x01			// flag, dead
+ROMC:6986 GOSUB 6E84						// set high byte of ptr to target player
+ROMC:6989 LET @CF30.b = 0x01			// 0xDn01, current lives
+ROMC:698E LET @(CF30).b = @(CF30).b - 0x01	// decrement current lives
+ROMC:6995 RETURN
+
+
+ROMC:6996 GOSUB 6EF9			// initialize individual status @CF32.w => 0x00
+ROMC:6999 GOSUB 6EA5			// set pointer to target's individual data => @CF32.w
+ROMC:699C LET @(CF32).b = @(CF32).w OR @CF24.b
+ROMC:69A3 RETURN
+
+// set target's type/class
+ROMC:69A4 GOSUB 69B5			// get target's species
+ROMC:69A7 LET @CF36.w = 0x7800 + @CFA8.b	// set pointer to target's type/class
+ROMC:69AF LET @CFA9.b = @(CF36).b	// set target's type/class
+ROMC:69B4 RETURN
+
+// set target's species
+ROMC:69B5 GOSUB 6E84						// set high byte of ptr to target player
+ROMC:69B8 LET @CF30.b = 0x0A			// pointer to target's species Dn0A
+ROMC:69BD LET @CFA8.b = @(CF30).b	// set target's species
+ROMC:69C2 RETURN
+
+// get defender's item ID
+ROMC:69C3 LET @CF32.w = 0x03		// set offset to target's current item
+ROMC:69C8 GOSUB 6EA5			// set pointer to target's individual data => @CF32.w
+ROMC:69CB LET @CF17.w = @(CF32).w		// defender's item ID
+ROMC:69D0 RETURN
+
+// get defender item data, 2nd byte
+ROMC:69D1 LET @CF34.w = @CF17.w * 0x08 + 0x6F81		// item data, 2nd byte
+ROMC:69DB LET @CFB0.b = @(CF34).b				// set item data, 2nd byte
+ROMC:69E0 RETURN
+
+// set target DEF
+ROMC:69E1 GOSUB 6E84						// set high byte of ptr to target player
+ROMC:69E4 LET @CF30.b = 0x11			// set pointer to target DEF = Dn11
+ROMC:69E9 LET @CFA5.b = @(CF30).b	// set target DEF
+ROMC:69EE RETURN
+
+// check if target is CURS
+ROMC:69EF IF 0x00 < @CF07.b AND 0x20			// if target is CURS
+ROMC:69F6 LET @CFA5.b = @CFA5.b / 0x02		// halve target's DEF
+ROMC:69FD RETURN
+
+// update attacker's AGL
+ROMC:69FE GOSUB 6E7C	// get high byte of pointer to attacker's data => @CF31.b
+ROMC:6A01 LET @CF30.b = 0x0F		// attacker's AGL, Dn0F
+ROMC:6A06 LET @CFAB.b = @(CF30).b	// set attacker's AGL amount for current item's calculations
+ROMC:6A0B IF 0x00 < @CF06.b AND 0x40			// if attacker is BLND
+ROMC:6A12 LET @CFAB.b = @CFAB.b / 0x02		// attacker AGL is halved
+ROMC:6A19 GOSUB 6E7C					// get high byte of pointer to target's data
+ROMC:6A1C GOSUB 6EE2					// get character's Magi equipped
+ROMC:6A1F IF @(CF30).w = 0x0101		// if Speed Magi
+ROMC:6A25 LET @CFAB.b = @C2DC.b AND 0x0F + 0x05 + @CFAB.b	// raise AGL
+ROMC:6A31 RETURN
+
+// calculate sword damage - armor
+ROMC:6A32 LET @CFB8.b = RANDOM(@CFAA.b)  	// random(STR)
+ROMC:6A37 GOSUB 6E8C			// get target's armor => @CF74.w
+ROMC:6A3A LET @CF74.w = @CFAA.b * @CF24.b + @CFB8.b -- @CF74.w	// final damage = attacker.STR * item.multiplier + random(STR) -- target.armor
+ROMC:6A45 RETURN
+
+// magic damage formula
+ROMC:6A46 GOSUB 6ECD			// get magic offense @CF74.w
+ROMC:6A49 LET @CF39.w = @CF74.w * @CFA4.b / 0xC8
+// set defense = offense * defenderMANA / 200
+ROMC:6A52 LET @CF74.w = @CF74.w -- @CF39.w		// damage = offense - defense
+ROMC:6A59 RETURN
+
+// set max lives
+ROMC:6A5A LET @CF16.b = 0x00			// initialize what?
+ROMC:6A5F GOSUB 6E84						// set high byte of ptr to target player
+ROMC:6A62 LET @CF30.b = 0x00			// initialize low byte of ptr to max lives
+ROMC:6A67 LET @CF03.b = @(CF30).b		// set max lives
+ROMC:6A6C RETURN
+
+// get pointer to target individual's current HP
+ROMC:6A6D LET @CF32.w = 0x01		// pointer to current HP data
+ROMC:6A72 GOSUB 6EA5			// set pointer to target's individual data => @CF32.w
+ROMC:6A75 RETURN
+
+// recover HP, but no more than max HP
+ROMC:6A76 GOSUB 6E84				// set high byte of ptr to target player => @CF31.b
+ROMC:6A79 LET @CF30.b = 0x0C		// get Dn0C = max HP
+ROMC:6A7E IF @(CF32).w > @(CF30).w		// if new HP > max HP
+ROMC:6A83 LET @(CF32).w = @(CF30).w		// new HP = max HP
+ROMC:6A88 RETURN
+
+// weapon resistance
+ROMC:6A89 IF 0x00 < @CFA6.b AND 0x02		// if target has weapon resistance
+ROMC:6A90 LET @CF74.w = @CF74.w / 0x02	// halve damage
+ROMC:6A97 RETURN
+
+// halve damage from blocking and weapon resistance
+ROMC:6A98 GOSUB 684F			// get target's element resistance => @CFA6.b
+ROMC:6A9B IF 0x00 < @CFB0.b AND 0x08		// if defender item can block
+ROMC:6AA2 LET @CF74.w = @CF74.w / 0x02		// blocking = halve damage
+ROMC:6AA9 GOSUB 6A89			// weapon resistance = halve damage
+ROMC:6AAC RETURN
+
+// get physical attack hit, miss, or block chance
+ROMC:6AAD LET @CF76.b = 0x00		// reset flag = attack not blocked
+ROMC:6AB2 GOSUB 6905						// get target first alive life => @CF16.b
+ROMC:6AB5 LET @CF32.w = @CF15.b * 0x0100 + 0xD00F	// get target data
+ROMC:6AC0 LET @CFA3.b = @(CF32).b			// get AGL
+ROMC:6AC5 IF 0x00 < @CF07.b AND 0x40 		// if target is BLND
+ROMC:6ACC LET @CFA3.b = @CFA3.b / 0x02	// AGL is halved
+ROMC:6AD3 GOSUB 6E84			// set high byte of ptr to target player => @CF31.b
+ROMC:6AD6 GOSUB 6EE2			// get character's Magi equipped
+ROMC:6AD9 IF @(CF30).w = 0x0101	// if Speed Magi
+ROMC:6ADF LET @CFA3.b = @C2DC.b AND 0x0F + 0x05 + @CFA3.b // raise AGL
+ROMC:6AEB GOSUB 69C3		// get defender's item ID
+ROMC:6AEE GOSUB 69D1		// get item data, 2nd byte
+ROMC:6AF1 IF 0x00 = @CFB0.b AND 0x08		// if item cannot block melee
+ROMC:6AF8 GOTO 6B1F									// get hit chance and return => @CFB3.b
+ROMC:6AFB GOSUB 6823		// get item pointer, 5th byte data: numeral for effect => @CFB2.b
+ROMC:6AFE IF RANDOM(0x64) > @CFB2.b + @CFA3.b		// if random(100) > (shield.BlockChance + target.AGL)
+ROMC:6B05 GOTO 6B1F							// didn't block. set hit chance and return => @CFB3.b
+ROMC:6B08 LET @CF76.b = 0x01				// reset flag = attack was blocked
+ROMC:6B0D GOSUB 6C09							// play sound effect, defender's item
+ROMC:6B10 LET @D906.w = @CF17.w		// set message variable : defender's item
+ROMC:6B16 LET @D90C.b = 0x2C				// set message : ^$CHAR defended^against$ITEM^with $ITEM.
+ROMC:6B1C GOTO 6CD4							// print message and return
+
+// set hit chance
+ROMC:6B1F GOSUB 69FE		// update attacker's AGL => @CFAB.b
+ROMC:6B22 GOSUB 6A0B		// update attacker's AGL again!?!
+ROMC:6B25 LET @CFB3.b = @CFA3.b -- @CFAB.b * 0x02	// set AGL.difference = [target.AGL - (attacker.AGL * 2)]
+ROMC:6B2E LET @CFB3.b = 0x61 -- @CFB3.b						// set hit chance = [97 -- AGL.difference]
+ROMC:6B35 RETURN
+
+
+ROMC:6B36 LET @CFB4.b = 0x00
+ROMC:6B3B IF 0x00 < @CFA7.b AND @CF25.b	// if target weak against element
+ROMC:6B42 GOTO 6B51
+ROMC:6B45 LET @CFB4.b = @CFA4.b -- @CFAC.b * 0x02 + 0x32
+ROMC:6B50 RETURN
+
+
+ROMC:6B51 GOSUB 6C72
+ROMC:6B54 RETURN
+
+// play animation on target
+ROMC:6B55 IF @CF15.b <= 0x04		// if target ID is party
+ROMC:6B5A GOTO 6B7D					// play item animation, party and return
+ROMC:6B5D IF @CF15.b <= 0x07		// if target ID is monster
+ROMC:6B62 GOTO 6B9B					// play animation on target and return
+ROMC:6B65 IF @CF12.b <= 0x04		// if attacker ID is party
+ROMC:6B6A GOTO 6BA3					// set animation if random front player or monster, and return
+ROMC:6B6D IF @CF15.b = 0x09		// if target is random / all monster
+ROMC:6B72 GOTO 6B7D					// play item animation, party and return
+ROMC:6B75 LET @CFF5.b = 0x09		// get monster ID for animation
+ROMC:6B7A GOTO 6B87					// play item animation on monster and return
+
+// play item animation on party
+ROMC:6B7D LET @D910.b = 0x00		// animation, shake screen?
+ROMC:6B83 SYS 01E0							// play animation
+ROMC:6B86 RETURN
+
+// play attacker's item animation on monster
+ROMC:6B87 LET @CF36.w = @CF13.b * 0x08 + 0x6F86	// offset to item animation
+ROMC:6B91 LET @D910.b = @(CF36).b			// item animation ID
+ROMC:6B97 SYS 01E0									// play animation
+ROMC:6B9A RETURN									// end animation checks
+
+// play animation on target
+ROMC:6B9B LET @CFF5.b = @CF15.b		// monster ID (05-07)
+ROMC:6BA0 GOTO 6B87							// play item animation
+
+// set animation if random front player
+ROMC:6BA3 IF @CF15.b = 0x08				// if random front player
+ROMC:6BA8 GOTO 6B7D							// play item animation, party and return
+ROMC:6BAB GOTO 6B9B							// loop animation
+
+// set defender item animation and attacking monster ID
+ROMC:6BAE IF @CF12.b > 0x04				// if attacker is monster
+ROMC:6BB3 GOTO 6BB9							// get defender item animation and monster ID
+ROMC:6BB6 GOTO 6B7D							// play item animation and return
+
+// get defender item animation and monster ID
+ROMC:6BB9 LET @CF36.w = @CF17.b * 0x08 + 0x6F86		// get defender item animation
+ROMC:6BC3 LET @CFF5.b = @CF12.b		// set monster ID = attacker ID
+ROMC:6BC8 GOTO 6B91							// play animation and return
+
+// check criteria to play item animation
+ROMC:6BCB IF @CF15.b <= 0x04		// if target == party, return
+ROMC:6BD0 RETURN
+ROMC:6BD1 IF @CF15.b <= 0x07		// if target == monster
+ROMC:6BD6 GOTO 6B9B					// play item animation
+ROMC:6BD9 IF @CF12.b <= 0x04		// if attacker ID == party
+ROMC:6BDE GOTO 6BEF					// play item animation
+ROMC:6BE1 IF @CF15.b = 0x09		// if no target?, return
+ROMC:6BE6 RETURN
+ROMC:6BE7 LET @CFF5.b = 0x09		// monster ID == all monsters
+ROMC:6BEC GOTO 6B87					// play item animation on monsters
+
+// verify target != random member
+ROMC:6BEF IF @CF15.b = 0x08		// if target == random party member
+ROMC:6BF4 RETURN							// then return
+ROMC:6BF5 GOTO 6B9B					// else play animation
+
+// sound effect, attacker's item
+ROMC:6BF8 LET @CF36.w = @CF13.w * 0x08 + 0x6F87
+ROMC:6C02 LET @FFB2.b = @(CF36).b			// sound effect
+ROMC:6C08 RETURN
+
+// sound effect, defender's item
+ROMC:6C09 LET @CF36.w = @CF17.w * 0x08 + 0x6F87
+ROMC:6C13 LET @FFB2.b = @(CF36).b			// sound effect
+ROMC:6C19 RETURN
+
+ROMC:6C1A LET @CF36.w = @CFF0.w * 0x08 + 0x6F87
+ROMC:6C24 LET @FFB2.b = @(CF36).b			// sound effect
+ROMC:6C2A RETURN
+
+// print damages to target
+ROMC:6C2B LET @D900.w = @CF74.w		// set message variable : $amount damage
+ROMC:6C31 LET @D90C.b = 0x41				// set message : ^$AMOUNTdamages to^$CHAR.
+ROMC:6C37 GOTO 6CD4							// print message and return
+
+// set message strings
+ROMC:6C3A LET @D90C.b = 0x20	// set message : ^$CHAR attacks^$CHAR with^$ITEM.
+ROMC:6C40 GOTO 6CD4					// print message and return
+
+// print message based on group size
+ROMC:6C43 GOSUB 6763					// get target's number of lives =>@CF14.b
+ROMC:6C46 IF @CF1A.b = 0x01		// if lives == 1
+ROMC:6C4B GOTO 6C3A					// print ^$CHAR attacks^$CHAR with^$ITEM, and return
+ROMC:6C4E LET @D90C.b = 0x2B		// set message : ^$CHAR attacked^$CHAR group^with $ITEM.
+ROMC:6C54 GOTO 6CD4					// print message and return
+
+// set message
+ROMC:6C57 LET @D90C.b = 0x2F		// set message : ^$CHAR attacks^enemies with^$ITEM.
+ROMC:6C5D GOTO 6CD4					// print message and return
+
+// set message
+ROMC:6C60 LET @D90C.b = 0x29		// set message : ^$CHAR used^$ITEM for^$CHAR.
+ROMC:6C66 GOTO 6CD4					// print message and return
+
+// set message
+ROMC:6C69 LET @D90C.b = 0x33		// set message : ^$CHAR is strong^against $ITEM.
+ROMC:6C6F GOTO 6CD4					// print message and return
+
+// set message
+ROMC:6C72 LET @D90C.b = 0x32		// set message : ^$CHAR is weak^against $ITEM.
+ROMC:6C78 GOTO 6CD4					// print message and return
+
+// group destroyed
+ROMC:6C7B LET @D90C.b = 0x07		// set message : ^$CHAR fell.
+ROMC:6C81 GOTO 6CD4					// print message and return
+
+// play sound effect, nothing happened.
+ROMC:6C84 LET @FFB2.b = 0x15		// sound effect
+ROMC:6C8A LET @D90C.b = 0x0D	// set message : ^Nothing happened.
+ROMC:6C90 GOTO 6CD4					// print message and return
+
+// no damage
+ROMC:6C93 LET @FFB2.b = 0x08		// sound effect
+ROMC:6C99 LET @D90C.b = 0x22		// set message : ^No Damage.
+ROMC:6C9F GOTO 6CD4					// print message and return
+
+// reflect magic
+ROMC:6CA2 GOSUB 6905						// find first alive member in group
+ROMC:6CA5 GOSUB 69C3						// get defender's item ID
+ROMC:6CA8 GOSUB 69D1						// get defender item data, 2nd byte
+ROMC:6CAB IF 0x00 = @CFB0.b AND 0x10	// if item cannot reflect magic
+ROMC:6CB2 RETURN								// end reflect
+ROMC:6CB3 LET @CFB8.b = @CF12.b	// set temp ID = attacker group ID
+ROMC:6CB8 LET @CF12.b = @CF15.b	// set attacker ID = target ID
+ROMC:6CBD LET @CF15.b = @CFB8.b	// set target ID = temp ID
+ROMC:6CC2 LET @D906.w = @CF12.b	// set message variable = target.old ID
+ROMC:6CC8 LET @D90A.w = @CF15.b	// set message variable = attacker.old ID
+ROMC:6CCE LET @D90C.b = 0x31			// set message : ^$CHAR repulsed^the attack.
+// print message
+ROMC:6CD4 SYS 0020							// print message
+ROMC:6CD7 RETURN
+
+// raise attacker HP
+ROMC:6CD8 LET @CF32.w = 0x01		// set pointer to current HP Dn41
+ROMC:6CDD GOSUB 6E94						// get pointer to individual status => @CF32.w
+ROMC:6CE0 LET @CF08.w = @(CF32).w	// set HP.old
+ROMC:6CE5 LET @(CF32).w = @(CF32).w + @CFB5.w	// HP.new = HP.old + HP.asborbed
+ROMC:6CEC GOSUB 6E7C						// get high byte of pointer to attacker's data
+ROMC:6CEF LET @CF30.b = 0x0C			// set attacker max HP
+ROMC:6CF4 IF @(CF32).w > @(CF30).w	// if HP.new > HP.max
+ROMC:6CF9 LET @(CF32).w = @(CF30).w	// HP.new = HP.new
+ROMC:6CFE LET @CFB5.w = @(CF32).w - @CF08.w	// HP.changed = HP.new - HP.old
+ROMC:6D05 LET @D900.w = @CFB5.w		// set message variable : HP.changed
+ROMC:6D0B RETURN
+
+// loop thru and print each ailment healed
+ROMC:6D0C LET @CF61.b = 0x00			// reset loop counter
+ROMC:6D11 IF 0x00 < @CF76.b AND 0x80		// if ailment 1st bit match
+ROMC:6D18 GOTO 6D2D						// print ailment healed
+ROMC:6D1B LET @CF76.b = @CF76.b << 0x01	// left shift ailments
+ROMC:6D22 INC @CF61.b					// increment loop counter
+ROMC:6D24 IF @CF61.b <= 0x07			// if counter <= 7
+ROMC:6D29 GOTO 6D11						// continue loop
+ROMC:6D2C RETURN
+
+// print ailment healed
+ROMC:6D2D LET @D90C.b = 0x49 + @CF61.b		// set message : Revived!; ^Recovered sight.; ^Released from^curse.; ^Softened.; ^Back to sane.; ^Neutralized.; ^Released from^paralysis.; ^Woke up.
+ROMC:6D35 SYS 0020				// print message
+ROMC:6D38 GOTO 6D1B
+
+// apply each status from item to target
+ROMC:6D3B LET @CF76.b = @CF24.b	// set flag = item data
+ROMC:6D40 LET @CF61.b = 0x00			// reset loop index for status type
+ROMC:6D45 IF 0x00 < @CF76.b AND 0x80	// if flag matches status type
+ROMC:6D4C GOTO 6D61						// apply status ailment to target
+ROMC:6D4F LET @CF76.b = @CF76.b << 0x01		// flag << 1
+ROMC:6D56 INC @CF61.b					// increment loop index
+ROMC:6D58 IF @CF61.b <= 0x07			// loop thru all 8 ailments
+ROMC:6D5D GOTO 6D45						// continue loop
+ROMC:6D60 RETURN
+
+// apply status ailment
+ROMC:6D61 GOSUB 6E57						// set message variable : target name => @D90A.w
+ROMC:6D64 LET @D90C.b = 0x1B		// set message : ^$CHAR
+ROMC:6D6A SYS 0020							// print message
+ROMC:6D6D LET @D90C.b = 0x51 + @CF61.b	// set message = fell.; ^lost sight.; ^was cursed.; was^turned to stone.; was^confused.; was^poisoned.; was^paralyzed.; slept.
+ROMC:6D75 SYS 0020							// print message
+ROMC:6D78 GOTO 6D4F						// return to loop
+
+
+ROMC:6D7B LET @CF32.w = 0xC206 + @CF94.b
+ROMC:6D83 LET @CF07.b = @(CF32).b
+ROMC:6D88 RETURN
+
+
+ROMC:6D89 LET @CF07.b = @(CF32).b
+ROMC:6D8E IF 0x00 = @CF07.b AND 0x80
+ROMC:6D95 GOTO 6D9F
+ROMC:6D98 INC @CF32.w
+ROMC:6D9A LET @(CF32).w = 0x00
+ROMC:6D9F LET @CF32.w = 0x03
+ROMC:6DA4 GOSUB 6EA5			// set pointer to target's individual data => @CF32.w
+ROMC:6DA7 IF 0x00 < @CF07.b AND 0x01
+ROMC:6DAE LET @(CF32).w = 0x010F
+ROMC:6DB4 IF 0x00 < @CF07.b AND 0x02
+ROMC:6DBB LET @(CF32).w = 0x010E
+ROMC:6DC1 RETURN
+
+// get attacker race
+ROMC:6DC2 GOSUB 6E7C		// get high byte of pointer to attacker's data => @CF31.b
+ROMC:6DC5 LET @CF30.b = 0x0B		// set Dn0B = race
+ROMC:6DCA LET @CF89.b = @(CF30).b	// set race
+ROMC:6DCF RETURN
+
+// get player data offset from party order
+// @C2A0.b is party order, back to front
+ROMC:6DD0 LET @CFD0.b = @C2A0.b >> @CF12.b AND 0x03 * 0x20
+// playerDataOffset = partyOrder >> partyMember AND 0011 * 32
+ROMC:6DDC IF @CF12.b = 0x08			// if 5th party member
+ROMC:6DE1 LET @CFD0.b = 0x80		// offset = 80
+ROMC:6DE6 RETURN
+
+// check target's DEF Magi, raise DEF
+ROMC:6DE7 GOSUB 6E84						// set high byte of ptr to target => @CF31.b
+ROMC:6DEA GOSUB 6EE2						// get character's Magi equipped
+ROMC:6DED IF @(CF30).w = 0x0103	// if DEF Magi
+ROMC:6DF3 LET @CFA5.b = @C2E0.b AND 0x0F + 0x05 + @CFA5.b	// raise DEF
+ROMC:6DFF RETURN
+
+// aegis/elemental magi bonus to defense/resistance
+ROMC:6E00 GOSUB 6E7C			//ptr to player/enemy ID in group (D0 to D7); set @CF31.b
+ROMC:6E03 GOSUB 6EE2			// @CF30.b = 2A
+ROMC:6E06 LET @CF53.w = @(CF30).w			// get item ID
+ROMC:6E0B LET @CF30.w = @CF53.w * 0x08 + 0x6F81		// set ptr to item data at 32F81
+ROMC:6E15 IF 0x00 = @(CF30).b AND 0x20		// if not aegis/elemental magi
+ROMC:6E1C RETURN
+ROMC:6E1D LET @CF30.w = @CF53.w * 0x08 + 0x6F84		// set ptr to element
+ROMC:6E27 IF 0x00 = @(CF25).b AND @(CF30).b		// match item element with magi element
+ROMC:6E2E RETURN
+ROMC:6E2F LET @CF30.w = @CF53.b * 0x02 + 0xC2DA		// pointer to magi data
+ROMC:6E39 LET @CFAC.b = @(CF30).b AND 0x0F + @CFAC.b + 0x05	// add stat to magi count
+ROMC:6E44 RETURN
+
+// print $Target recovered $Amount HP.
+ROMC:6E45 LET @D900.w = @CFB5.w		// set $amount HP
+ROMC:6E4B GOSUB 6E57							// set message variable : target => @D90A.w
+ROMC:6E4E LET @D90C.b = 0x2A			// set message : ^$CHAR recovered^$AMOUNT HP.
+ROMC:6E54 GOTO 6CD4							// print message
+
+// set message variable to target name
+ROMC:6E57 LET @D90A.w = @CF15.b		// get target name
+ROMC:6E5D RETURN
+
+// initialize loop thru party members
+ROMC:6E5E GOSUB 6EDC					// initialize target to first player => @CF15.b
+ROMC:6E61 LET @CF01.b = 0x04		// set max group ID = party size
+ROMC:6E66 RETURN
+
+// initialize loop thru monsters
+ROMC:6E67 LET @CF15.b = 0x05		// set next target to first monster
+ROMC:6E6C LET @CF01.b = 0x07		// set max target to last monster
+ROMC:6E71 RETURN
+
+// get address segment to active player's block, (D1, D2, D3, etc)
+ROMC:6E72 LET @CF31.b = @CF00.b * 0x01 + 0xD0
+ROMC:6E7B RETURN
+
+// get high byte of pointer to attacker's data
+ROMC:6E7C LET @CF31.b = @CF12.b + 0xD0		// D0nn to D7nn
+ROMC:6E83 RETURN
+
+// set high byte of pointer to target character/group's battle data
+ROMC:6E84 LET @CF31.b = @CF15.b + 0xD0		// D0nn to D7nn
+ROMC:6E8B RETURN
+
+// set target's armor
+ROMC:6E8C LET @CF74.w = @CFA5.b * 0x05	// armor = DEF * 5
+ROMC:6E93 RETURN
+
+// get pointer to attacker's individual status
+ROMC:6E94 LET @CF32.w = @CF12.b * 0x20 + @CF11.b * 0x08 + 0xD040 + @CF32.w
+// playerID*0x20 + ID*0x08 + 0xD040 + dataID (for dataID, see ROMC:6EB6)
+ROMC:6EA4 RETURN
+
+// set pointer to target's individual data
+ROMC:6EA5 LET @CF32.w = @CF15.b * 0x20 + @CF16.b * 0x08 + 0xD040 + @CF32.w
+// TargetPlayerID*0x20 + TargetIndividualID*0x08 + 0xD040 + dataID
+ROMC:6EB5 RETURN
+
+// get pointer to active individual data
+// @CF32.w = 0, status
+// @CF32.w = 1-2, HP
+// @CF32.w = 3, next attack
+ROMC:6EB6 LET @CF32.w = @CF00.b * 0x20 + @CF02.b * 0x08 + 0xD040 + @CF32.w
+// pointer = activeenemygroup * 0x20 + activeenemyindividual * 0x08 + 0xD040 + lastCF32
+ROMC:6EC6 RETURN
+
+// initialize loop counter for item array
+ROMC:6EC7 LET @CF04.b = 0x00
+ROMC:6ECC RETURN
+
+// magic offense
+ROMC:6ECD LET @CFB8.b = RANDOM(@CFAC.b)			// random of attackerMANA
+ROMC:6ED2 LET @CF74.w = @CFAC.b * @CF24.b + @CFB8.b
+// set offense = aMANA * damageMultiplier + random
+ROMC:6EDB RETURN
+
+// set target to 1st player, eg out of range
+ROMC:6EDC LET @CF15.b = 0x00			// initialize target to first player
+ROMC:6EE1 RETURN
+
+// get character's Magi equipped
+ROMC:6EE2 LET @CF30.b = 0x2A		// player data at offset D02A to D72A
+ROMC:6EE7 RETURN
+
+// calculate weapon damage + some randomness
+ROMC:6EE8 LET @CFB8.b = RANDOM(@CFAC.b)	// random from 0 to attacker's stat amount
+ROMC:6EED LET @CFB5.w = @CFAC.b + @CFA4.b * @CF24.b + @CFB8.b		// damage = target.stat * item.multiplier + attacker.stat + random(attacker.stat)
+ROMC:6EF8 RETURN
+
+// initialize individual status/data
+ROMC:6EF9 LET @CF32.w = 0x00		// initialize individual status
+ROMC:6EFE RETURN
+
+
+
+// START OF DATA SECTION
+ROMC:6EFF LET @CFFF.b
+ROMC:6F02 END
+
+ROMC:6F03 END
+
+ROMC:6F04 END
+
+ROMC:6F05 END
+
+ROMC:6F06 END
+
+ROMC:6F07 END
+
+ROMC:6F08 ???
+ROMC:6F09 END
+
+ROMC:6F0A END
+
+ROMC:6F0B END
+
+ROMC:6F0C END
+
+ROMC:6F0D END
+
+ROMC:6F0E END
+
+ROMC:6F0F END
+
+ROMC:6F10 ???
+ROMC:6F11 ???
+ROMC:6F12 END
+
+ROMC:6F13 END
+
+ROMC:6F14 END
+
+ROMC:6F15 END
+
+ROMC:6F16 END
+
+ROMC:6F17 END
+
+ROMC:6F18 DEC @CFCC.l
+ROMC:6F1A ???
+ROMC:6F1B END
+
+ROMC:6F1C END
+
+ROMC:6F1D END
+
+ROMC:6F1E END
+
+ROMC:6F1F END
+
+ROMC:6F20 SET C6
+ROMC:6F22 INC @CFF7.l
+ROMC:6F24 END
+
+ROMC:6F25 END
+
+ROMC:6F26 END
+
+ROMC:6F27 END
+
+ROMC:6F28 GOTO E3C3
+ROMC:6F2B ???
+ROMC:6F2C ???
+ROMC:6F2D END
+
+ROMC:6F2E END
+
+ROMC:6F2F END
+
+ROMC:6F30 IF @(CFC1).w * 0xF9F1 0xFFFF * @CFC3.l + 0xFBF3
+ROMC:6F3E END
+
+ROMC:6F3F END
+
+ROMC:6F40 LET @CFC1.l * 0xF9F1 0xFFFF @CF60.l * 0xF9F1 0xFFFF @CF60.l >= @(CFF1).b 0xFFFD
+ROMC:6F58 LET @CF60.l >= @(CF78).b 0xFFFD
+ROMC:6F60 LET @CF60.l >= @(CF78).b @(CFFD).b
+ROMC:6F67 END
+
+ROMC:6F68 LET @CF60.l >= @(CF78).b @(CF7E).b
+ROMC:6F6F END
+
+ROMC:6F70 IF @CF61.l + 0xFBF3
+ROMC:6F76 END
+
+ROMC:6F77 END
+
+ROMC:6F78 IF @CF61.l -- @(CFF3).b 0xFFFF
+
+
+
+
+// VARIABLES
+C200 player 1 stats
+C201
+C20F 1st item ID
+C210 1st item uses
+... for 8 items
+
+C220 player 2 stats
+C240 player 3 stats
+C260 player 4 stats
+C280 player 5 stats
+C2DE ?? mana related
+C2E0 amount of  Magi owned by target
+
+C2FC.b item effect
+
+CF00.b active player or enemy group
+CF01.b max active player or enemy group
+CF02.b active individual, inventory slot
+CF03.b max active individual, lives
+CF04.b loop counter for item array
+CF05.b active character's AGL
+CF06.b attacker's status
+CF07.b target's status
+CF08.b attacker lives
+CF09.b target lives
+CF0A.b temp current HP
+CF0C.w temp max HP
+CF0E.b maxHP, newMaxHP (also used to compare to monster DS)
+CF10.b species, active player (e.g. eating or dropping meat)
+CF11.b attacker individual ID
+CF12.b	attacker group ID
+CF13.w attacker's item ID, next attack ID
+CF15.b next attack target (player or group, 0-7 legal, 8 means random front player, 9=opposing team of players/monsters?)
+CF16.b loop counter thru max lives
+CF17.w defender's item ID
+CF18.b species (target player?)
+CF19.b max lives
+CF1A.b number of lives for active or target player
+CF1B.b species that dropped item or meat
+CF1C.b enemy DS
+CF20.b store 1st byte of item data: flags (targeting)
+CF21.b store 2nd byte of item data: flags (surprise, warning)
+CF22.b store 3rd byte of item data: flags (element resist/vulnerable)
+CF23.b store 4th byte of item data: value (item effect)
+CF24.b store 5th byte of item data: value (item effect modifier/parameter)
+CF25.b store 6th byte of item data: value (item effect modifier/parameter) ; chance / element
+
+CF30.w pointer to character/group's stats in battle (lives, species, status, STR, AGL, Magi, item ID and uses, etc)
+CF31.b pointer's high byte, Dn
+CF32.w pointer to character/individual status, HP, next attack, item counter
+CF33.w pointer's high byte, Dn
+CF34.w pointer to item data in ROM (8 bytes long)
+CF36.w pointer to item, gold level data
+CF38.w item ID, uses for new skill; low 3 bits of gold level data; meat type/class
+CF39.b magical damage repelled
+CF40.b player surprise
+CF41.b player warning
+CF42.b enemy surprise
+CF43.b enemy warning
+
+CF45.w player's total AGL
+CF47.w enemy's total AGl
+CF49.w temp total AGL
+CF4B.l ? gold
+CF50.b ?
+CF52.b random number 255
+CF53.w pointer to DS level in ROM
+CF54.b
+CF60.b index for mutant skills list
+CF61.b stat index, STR =0, AGL=1, MANA=2, DEF=3. loop counter.
+CF62.w move selection probability; pointer to D803
+CF64.w attacker's initiative, CF62.w + 2, next individual who goes next in the turn
+CF66.w holds temp individual's turn order and player ID
+CF68.w pointer to CF6C
+CF6A.b temp active player's turn order, based on AGL
+CF6B.b total individuals for each turn
+CF6C.b - CF70.b temp hold individual ID for each player for each turn
+CF74.w damage, including target's armor
+CF76.b flag, something changed
+CF77.l ?
+CF7A.w pointer to battle order / gold drop level
+CF7C.l
+CF81.b meat monster type (soft, hard, etc.) , 0-11
+CF82.b meat monster class (A,B,C), 0-2
+CF83.b eating monster type
+CF84.b eating monster class
+CF85.b new monster type
+CF86.b new monster class
+CF88.b = CFD0.b, player2 data offset
+CF89.b race type, 0=Human, 1=Mutant, 2=Monster, 3=Robot
+CF8A.w max die for skill gain
+CF8C.w pointer to player's item list, beginning at C2nF
+CF8E.w pointer to player's maxHP at C2n9
+CF90.w pointer to player's base stat
+CF92.b player's base stat
+CF94.w pointer to human and mutant growth rate table
+CF94.b = CFD0.b, player1 data offset
+CF96.b chance of gaining stats after battle
+CF97.b player bonus points when enemyDS > playerDS
+CFA0 address to item script/subroutine
+CFA1.b target's HP amount for current item's calculations
+CFA2.b target's STR amount for current item's calculations
+CFA3.b target's AGL amount for current item's calculations
+CFA4.b target's MANA amount for current item's calculations
+CFA5.b target's DEF amount (counter damage?) (@CFA5.b = @CFA5.b / 0x02)
+CFA6.b target's element resistance
+CFA7.b target's element weakness
+CFA8.b target's species
+CFA9.b attacker's species/ HP amount for current item's calculations
+CFAA.b attacker's STR amount for current item's calculations
+CFAB.b attacker's AGL amount for current item's calculations
+CFAC.b attacker's MANA amount for current item's calculations (e.g. cure)
+CFAD.b attacker element resistance
+CFAE.b attacker element weakness
+CFAF.b attacker item data, 2nd byte
+CFB0.b defender item data, 2nd byte
+CFB1.b defender? item data, 5th byte
+CFB2.b defender item data, 6th byte
+CFB3.b chance. (denominator for stat growth formula?)
+CFB4.b status hit chance
+CFB5.w HP changed or damage
+CFB7.b amount counter (skills, kills)
+CFB8.b bonus damage
+CFC0.b	flag for Apollo fight
+CFD0.b low byte of player data offset at C200, C220, C240, C260, C280
+CFE0.b enemy data: #, monster1, #, monster2, #, monster3
+CFF0.w <= 0xFF, item ID. 0x100 = no move, >= 0x101 Magi
+CFF2.b @CF12.b = @CFF3.b * 0x02, where CF12.b = target ID?
+CFF3.b @CF12.b = @CFF3.b * 0x02, where CF12.b = attacker ID?
+CFF4.b 0x00 ?? program 5
+CFF5.b monster ID (05-07) for animation
+
+D000 - D7FF (all player & enemy battle stats)
+Dn00.b max lives
+Dn01.b current lives
+Dn02-09 name
+Dn0A.b species
+Dn0B.b race
+Dn0C.w max HP
+Dn0E.b STR
+Dn0F.b AGL
+Dn10.b MANA
+Dn11.b DEF
+Dn2A.b Magi equipped (current/last item used ID?)
+Dn2D.b element resistance
+Dn2E.b element weakness
+Individual Enemy: (Dn40-Dn47 for 1st monster = 8 bytes)
+Dn40.b status
+Dn41.b current HP
+Dn43.b current item
+
+
+more vars, used by interpreter, skeleton
+D800.b (00, 01, 02) temp vars, reusable, surprise turn
+D801.b can't run flag?
+D802.b ??
+D803.b+04.b - D8xx.b+xy.b each individual's turn order
+D844.b encounter flags, pointer to monster stats in ROM
+D845.b flag, meat dropped
+D846.b flag, monster transformed
+D847.b final evolved species
+D848.b
+D84C.b ID, player who's eating meat
+D84D.b last item used by player
+D900.w message variable : attacker name, amount damage or gold (from @CFB5.w / @CF74.w)
+D906.w message variable : attacker/defender item name
+D908.w message variable : target item name
+D90A.w message variable : target name (from @CF15.b)
+D90C.b full message to print, ID (before SYS 0020 => print message)
+D910.b item animation ID (before SYS 01E0 => play animation)
+
+FFB2.b sound effect (attack missed, nothing happened)

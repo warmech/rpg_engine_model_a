@@ -1,3 +1,8 @@
+function love.conf(t)
+	t.window.vsync = 1                  -- Vertical sync mode (number)
+end
+
+
 function love.load()
     love.window.setMode(768, 432)
     fileName = "water.png"
