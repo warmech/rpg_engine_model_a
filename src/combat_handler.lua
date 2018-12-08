@@ -1,8 +1,8 @@
-function attemptRunFromBattle()
+function playerAttemptRun()
 
 	local cantRunFlag = true
-	local currentPlayer = 1
-	local maxPlayer = 5
+	local activePartyMember = 1
+	local maxPartyMembers = (#playerCharacters)
 
 	if (currentFight.bossFightFlag == true) then
 		return false
@@ -12,18 +12,27 @@ function attemptRunFromBattle()
 		return true
 	end
 	
-	local function calcTotalAgility()
-		local totalAgility = 0
-		
-		
-	end
+	local partyAgility = calcTotalAgility(#playerCharacters)
+	local enemyAgility = calcTotalAgility(#activeEnemyGroup)
+
 
 end
 
 
-playerCharacter = 
-{
+function calcTotalAgility(group)
+	local totalAgility = 0
 	
+	for i = 1, (#group) do
+		if (group[i].isPlayerCharacter == true) then
+			if (group[i].currentLives == 0) then
+				totalAgility = totalAgility + 100
+			end
+		else
+			totalAgility = totalAgility + group[i].agility
+		end
+	end
+	return totalAgility
+end
 
 
 
@@ -33,4 +42,11 @@ playerCharacter =
 
 
 
-}
+
+
+
+
+
+
+
+
