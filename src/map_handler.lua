@@ -86,30 +86,50 @@ function updateTilesetSpriteBatch()
         end
     end
 
-    --Render data to GPU and return updated map sprite batch
+    --Send data to GPU
     currentMap.layers.bottom:flush()
     currentMap.layers.top:flush()
 end
 
 function moveMap()
+    --Log the "old" XY data for the home corner on the map
     local oldMapX = currentMap.metadata.mapX
     local oldMapY = currentMap.metadata.mapY
+    --Update the XY data for the home corner - [0,0] on the sprite batch drawn to the screen
     currentMap.metadata.mapX = math.max(math.min(currentMap.metadata.mapX + playerCharacter.gfx.xDelta, currentMap.metadata.mapWidth - currentMap.metadata.tilesDisplayWidth + currentMap.metadata.mapBoundaryOffset), 1)
     currentMap.metadata.mapY = math.max(math.min(currentMap.metadata.mapY + playerCharacter.gfx.yDelta, currentMap.metadata.mapHeight - currentMap.metadata.tilesDisplayHeight + currentMap.metadata.mapBoundaryOffset), 1)
 
-    -- only update if we actually moved
+    --If the old and new XY data are incongruous, update the sprite batch
     if math.floor(currentMap.metadata.mapX) ~= math.floor(oldMapX) or math.floor(currentMap.metadata.mapY) ~= math.floor(oldMapY) then
         updateTilesetSpriteBatch()
     end
 end
 
-
-
-
-
-function tileAnimate()
-    -- body
-    
+function animatedTileRewrite()
+    --Check to see if the frame delay timer has reached go-time
+    if (currentMap.metadata.frameDelayCounter == currentMap.metadata.frameDelayMaximum) then
+        --If it has, scan the section of the bottom tilemap layer that corresponds to the area drawn to the current sprite batch
+        for y = math.floor(currentMap.metadata.mapY), math.floor(currentMap.metadata.mapY + currentMap.metadata.tilesDisplayHeight) do
+            for x = math.floor(currentMap.metadata.mapX), math.floor(currentMap.metadata.mapX + currentMap.metadata.tilesDisplayWidth) do
+                --If the current tile's value is between the index frame and final frame in the animation sequence, replace that tile value with the current frame
+                if (currentMap.tilemap.bottom[y][x] >= currentMap.metadata.animationIndex and currentMap.tilemap.bottom[y][x] <= currentMap.metadata.maxAnimFrame) then
+                    currentMap.tilemap.bottom[y][x] = currentMap.metadata.currentAnimFrame
+                end
+            end
+        end
+        --If the current frame has reached the end of the animation loop, reset the frame counter
+        if (currentMap.metadata.currentAnimFrame == currentMap.metadata.maxAnimFrame) then
+            currentMap.metadata.currentAnimFrame = currentMap.metadata.animationIndex
+        else
+            --Otherwise, increment the frame counter
+            currentMap.metadata.currentAnimFrame = currentMap.metadata.currentAnimFrame + 1
+        end
+        --Reset the frame delay timer after drawing the next frame
+        currentMap.metadata.frameDelayCounter = 1
+    else
+        --If the frame delay timer has not reached go-time yet, increment the counter
+        currentMap.metadata.frameDelayCounter = currentMap.metadata.frameDelayCounter + 1
+    end
 end
 
 function preCollisionMovementCheck(direction)
@@ -132,9 +152,11 @@ function postCollisionAction()
     --Do nothing if the tile is impassable (tile type 1) - this is handled by preCollisionMovementCheck()
 
     --Check if tile is a door/teleporter (tile type 2)
-    print("Tile: "..currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition])
-    print("X: "..playerCharacter.gfx.xTilePosition)
-    print("Y: "..playerCharacter.gfx.yTilePosition)
+    --print("Tile: "..currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition])
+    --print("Player X: "..playerCharacter.gfx.xTilePosition)
+    --print("Player Y: "..playerCharacter.gfx.yTilePosition)
+    --print("Map X: "..currentMap.metadata.mapX)
+    --print("Map Y: "..currentMap.metadata.mapY)
 
     if (currentMap.tilemap.collision[playerCharacter.gfx.yTilePosition][playerCharacter.gfx.xTilePosition] == 2) then
        for i = 1, (#currentMap.metadata.doorMetadata) do

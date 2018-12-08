@@ -1,16 +1,3 @@
-require "/src/data_handler"
-require "/src/map_handler"
-require "/src/player_obj"
-require "/src/character_gfx"
-require "/src/input_handler"
-require "/src/text_handler"
-
---[[
-cwd = love.filesystem.getWorkingDirectory()
-print()
-print("CWD: "..cwd)
-]]
-
 function love.load()
     love.window.setMode(768, 432)
 

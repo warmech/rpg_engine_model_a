@@ -14,7 +14,13 @@ metadata =
     tilesDisplayWidth = 18,
     tilesDisplayHeight = 11,
     mapBoundaryOffset = .5,
+    hasAnimatedTiles = true,
+    animationIndex = 21,
+    currentAnimFrame = 22,
+    maxAnimFrame = 36,
     mapDrawLayers = 3,
+    frameDelayCounter = 1,
+    frameDelayMaximum = 32,
     mapDrawOrder = 
     {
         "bottomLayer",
