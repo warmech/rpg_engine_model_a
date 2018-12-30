@@ -110,25 +110,12 @@ end
 function drawText()
     love.graphics.scale(3)
     local textSegment = sampleText:sub(1, text.metadata.iterator)
-    love.graphics.print(c, 10, 10)
+    love.graphics.print(textSegment, 10, 10)
 end
 
 
 
-text = 
-{
-    box = 
-    {
-        string = ""
 
-
-    },
-    metadata = 
-    {
-        timer = 0,
-        iterator = 0
-    }
-}
 
 
 
